@@ -31,15 +31,14 @@ if(OPENNI_FOUND OR OPENNI2_FOUND)
 	endif()
 
 	## RECORD TSDFVOLUME
-	set(the_target pcl_record_tsdfvolume)
-	set(srcs record_tsdfvolume.cpp capture.cpp)
+	# Depends on OpenNI 1.x, does not use the generic grabber.
+	if (BUILD_OPENNI AND HAVE_OPENNI)
+		set(the_target pcl_record_tsdfvolume)
+		set(srcs record_tsdfvolume.cpp capture.cpp)
 
-	PCL_ADD_EXECUTABLE("${the_target}" "${SUBSYS_NAME}" ${srcs} ${hdrs})
-	if (BUILD_OPENNI2 AND HAVE_OPENNI2)
-		target_link_libraries("${the_target}" pcl_common pcl_io ${OPENNI2_LIBRARIES} pcl_visualization pcl_gpu_kinfu)  
-	else ()
+		PCL_ADD_EXECUTABLE("${the_target}" "${SUBSYS_NAME}" ${srcs} ${hdrs})
 		target_link_libraries("${the_target}" pcl_common pcl_io ${OPENNI_LIBRARIES} pcl_visualization pcl_gpu_kinfu)
-	endif()  
+    endif()
 
 	## KINECT FUSION SIMULATION - DISABLED FOR NOW
 	#find_package(GLEW)
