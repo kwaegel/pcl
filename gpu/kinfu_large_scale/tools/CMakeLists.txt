@@ -1,4 +1,4 @@
-if(OPENNI_FOUND)
+if(OPENNI_FOUND OR OPENNI2_FOUND)
   if(NOT VTK_FOUND)
     set(DEFAULT FALSE)
     set(REASON "VTK was not found.")
@@ -21,8 +21,12 @@ if(OPENNI_FOUND)
   source_group("Source Files" FILES ${srcs} )
 
   PCL_ADD_EXECUTABLE_OPT_BUNDLE("${the_target}" "${SUBSYS_NAME}" ${srcs} ${hdrs})
-  target_link_libraries("${the_target}" pcl_common pcl_io ${OPENNI_LIBRARIES} pcl_visualization pcl_gpu_kinfu_large_scale pcl_kdtree pcl_features pcl_surface)
-
+  if (BUILD_OPENNI2 AND HAVE_OPENNI2)
+	target_link_libraries("${the_target}" pcl_common pcl_io ${OPENNI2_LIBRARIES} pcl_visualization pcl_gpu_kinfu_large_scale pcl_kdtree pcl_features pcl_surface)
+  else (BUILD_OPENNI2 AND HAVE_OPENNI2)
+	target_link_libraries("${the_target}" pcl_common pcl_io ${OPENNI_LIBRARIES} pcl_visualization pcl_gpu_kinfu_large_scale pcl_kdtree pcl_features pcl_surface)
+  endif()
+  
   ## KINECT FUSION
   set(the_target pcl_kinfu_largeScale)
   set(srcs kinfuLS_app.cpp capture.cpp evaluation.cpp)
@@ -30,21 +34,34 @@ if(OPENNI_FOUND)
   source_group("Source Files" FILES ${srcs} )
 
   PCL_ADD_EXECUTABLE_OPT_BUNDLE("${the_target}" "${SUBSYS_NAME}" ${srcs} ${hdrs})
-  target_link_libraries("${the_target}" pcl_common pcl_io ${OPENNI_LIBRARIES} pcl_visualization pcl_gpu_kinfu_large_scale pcl_octree)
+  if (BUILD_OPENNI2 AND HAVE_OPENNI2)
+	target_link_libraries("${the_target}" pcl_common pcl_io ${OPENNI2_LIBRARIES} pcl_visualization pcl_gpu_kinfu_large_scale pcl_octree) 
+  else (BUILD_OPENNI2 AND HAVE_OPENNI2)
+	target_link_libraries("${the_target}" pcl_common pcl_io ${OPENNI_LIBRARIES} pcl_visualization pcl_gpu_kinfu_large_scale pcl_octree) 
+  endif() 
   
   ## STANDALONE MARCHING CUBES
   set(the_target pcl_kinfu_largeScale_mesh_output)
   set(srcs process_kinfu_large_scale_output.cpp)
 
   PCL_ADD_EXECUTABLE_OPT_BUNDLE("${the_target}" "${SUBSYS_NAME}" ${srcs} ${hdrs})
-  target_link_libraries("${the_target}" pcl_common pcl_io ${OPENNI_LIBRARIES} pcl_visualization pcl_gpu_kinfu_large_scale pcl_filters)
+  if (BUILD_OPENNI2 AND HAVE_OPENNI2)
+	target_link_libraries("${the_target}" pcl_common pcl_io ${OPENNI2_LIBRARIES} pcl_visualization pcl_gpu_kinfu_large_scale pcl_filters)
+  else (BUILD_OPENNI2 AND HAVE_OPENNI2)
+	target_link_libraries("${the_target}" pcl_common pcl_io ${OPENNI_LIBRARIES} pcl_visualization pcl_gpu_kinfu_large_scale pcl_filters)
+  endif() 
+  
   
   ## RECORD MAPS_RGB
   set(the_target pcl_record_kinect_maps_rgb)
   set(srcs record_maps_rgb.cpp)
 
   PCL_ADD_EXECUTABLE_OPT_BUNDLE("${the_target}" "${SUBSYS_NAME}" ${srcs} ${hdrs})
-  target_link_libraries("${the_target}" pcl_common pcl_io ${OPENNI_LIBRARIES} pcl_visualization pcl_gpu_kinfu_large_scale pcl_filters)
+  if (BUILD_OPENNI2 AND HAVE_OPENNI2)
+	target_link_libraries("${the_target}" pcl_common pcl_io ${OPENNI2_LIBRARIES} pcl_visualization pcl_gpu_kinfu_large_scale pcl_filters)
+  else (BUILD_OPENNI2 AND HAVE_OPENNI2)
+	target_link_libraries("${the_target}" pcl_common pcl_io ${OPENNI_LIBRARIES} pcl_visualization pcl_gpu_kinfu_large_scale pcl_filters)
+  endif()
         
 
-endif(OPENNI_FOUND)
+endif(OPENNI_FOUND OR OPENNI2_FOUND)

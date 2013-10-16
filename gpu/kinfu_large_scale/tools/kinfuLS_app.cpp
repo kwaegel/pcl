@@ -764,7 +764,12 @@ struct KinFuLSApp
   void
   initRegistration ()
   {        
-    registration_ = capture_.providesCallback<pcl::ONIGrabber::sig_cb_openni_image_depth_image> ();
+#ifdef HAVE_OPENNI2
+	  registration_ = capture_.providesCallback<pcl::OpenNIGrabber::sig_cb_openni_image_depth_image>();
+#else
+	  registration_ = capture_.providesCallback<pcl::ONIGrabber::sig_cb_openni_image_depth_image> ();
+#endif
+    
     cout << "Registration mode: " << (registration_ ? "On" : "Off (not supported by source)") << endl;
   }
 
@@ -1268,12 +1273,14 @@ main (int argc, char* argv[])
     {
       capture.reset (new pcl::OpenNIGrabber (openni_device));
     }
+#ifdef HAVE_OPENNI
     else if (pc::parse_argument (argc, argv, "-oni", oni_file) > 0)
     {
       triggered_capture = true;
       bool repeat = false; // Only run ONI file once
       capture.reset (new pcl::ONIGrabber (oni_file, repeat, !triggered_capture));
     }
+#endif
     else if (pc::parse_argument (argc, argv, "-pcd", pcd_dir) > 0)
     {
       float fps_pcd = 15.0f;

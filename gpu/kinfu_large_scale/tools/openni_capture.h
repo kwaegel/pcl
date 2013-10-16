@@ -36,6 +36,8 @@
 
 #pragma once
 
+#ifdef HAVE_OPENNI
+
 #include <pcl/gpu/containers/device_array.h>
 #include <pcl/gpu/containers/kernel_containers.h>
 
@@ -89,3 +91,5 @@ namespace pcl
     }
   }
 };
+
+#endif
