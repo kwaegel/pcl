@@ -132,7 +132,7 @@ namespace openni_wrapper
     static char msg[1024];
     va_list args;
     va_start (args, format);
-    vsprintf (msg, format, args);
+    vsnprintf(msg, 1024, format, args);
     throw OpenNIException (function_name, file_name, line_number, msg);
   }
 } // namespace openni_camera

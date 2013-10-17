@@ -351,16 +351,6 @@ void
       //printf("[%s] searching for device with index = %d\n", getName().c_str(), index);
       device_ = deviceManager->getDeviceByIndex (index - 1);
     }
-#ifndef _WIN32
-    else if (device_id.find ('@') != std::string::npos)
-    {
-      size_t pos = device_id.find ('@');
-      unsigned bus = atoi (device_id.substr (0, pos).c_str ());
-      unsigned address = atoi (device_id.substr (pos + 1, device_id.length () - pos - 1).c_str ());
-      //printf("[%s] searching for device with bus@address = %d@%d\n", getName().c_str(), bus, address);
-      device_ = driver.getDeviceByAddress (static_cast<unsigned char>(bus), static_cast<unsigned char>(address) );
-    }
-#endif
     else if (!device_id.empty ())
     {
       //printf("[%s] searching for device with serial number = %s\n", getName().c_str(), device_id.c_str());

@@ -51,7 +51,7 @@ namespace openni2_wrapper
   using openni::VideoMode;
   typedef OpenNI2VideoMode WrapVideoMode;
 
-  OpenNI2Device::OpenNI2Device(const std::string& device_URI) throw (OpenNI2Exception) :
+  OpenNI2Device::OpenNI2Device(const std::string& device_URI) throw () :
     openni_device_(),
     ir_video_started_(false),
     color_video_started_(false),
@@ -428,7 +428,7 @@ namespace openni2_wrapper
     return openni_device_->isImageRegistrationModeSupported(openni::IMAGE_REGISTRATION_DEPTH_TO_COLOR);
   }
 
-  void OpenNI2Device::setImageRegistrationMode(bool enabled) throw (OpenNI2Exception)
+  void OpenNI2Device::setImageRegistrationMode(bool enabled) throw ()
   {
     if (isImageRegistrationModeSupported())
     {
@@ -448,14 +448,14 @@ namespace openni2_wrapper
     }
   }
 
-  void OpenNI2Device::setDepthColorSync(bool enabled) throw (OpenNI2Exception)
+  void OpenNI2Device::setDepthColorSync(bool enabled) throw ()
   {
     openni::Status rc = openni_device_->setDepthColorSyncEnabled(enabled);
     if (rc != openni::STATUS_OK)
       THROW_OPENNI_EXCEPTION("Enabling depth color synchronization failed: \n%s\n", openni::OpenNI::getExtendedError());
   }
 
-  const OpenNI2VideoMode OpenNI2Device::getIRVideoMode() throw (OpenNI2Exception)
+  const OpenNI2VideoMode OpenNI2Device::getIRVideoMode() throw ()
   {
     OpenNI2VideoMode ret;
 
@@ -473,7 +473,7 @@ namespace openni2_wrapper
     return ret;
   }
 
-  const OpenNI2VideoMode OpenNI2Device::getColorVideoMode() throw (OpenNI2Exception)
+  const OpenNI2VideoMode OpenNI2Device::getColorVideoMode() throw ()
   {
     OpenNI2VideoMode ret;
 
@@ -491,7 +491,7 @@ namespace openni2_wrapper
     return ret;
   }
 
-  const OpenNI2VideoMode OpenNI2Device::getDepthVideoMode() throw (OpenNI2Exception)
+  const OpenNI2VideoMode OpenNI2Device::getDepthVideoMode() throw ()
   {
     OpenNI2VideoMode ret;
 
@@ -509,7 +509,7 @@ namespace openni2_wrapper
     return ret;
   }
 
-  void OpenNI2Device::setIRVideoMode(const OpenNI2VideoMode& video_mode) throw (OpenNI2Exception)
+  void OpenNI2Device::setIRVideoMode(const OpenNI2VideoMode& video_mode) throw ()
   {
     boost::shared_ptr<openni::VideoStream> stream = getIRVideoStream();
 
@@ -522,7 +522,7 @@ namespace openni2_wrapper
     }
   }
 
-  void OpenNI2Device::setColorVideoMode(const OpenNI2VideoMode& video_mode) throw (OpenNI2Exception)
+  void OpenNI2Device::setColorVideoMode(const OpenNI2VideoMode& video_mode) throw ()
   {
     boost::shared_ptr<openni::VideoStream> stream = getColorVideoStream();
 
@@ -535,7 +535,7 @@ namespace openni2_wrapper
     }
   }
 
-  void OpenNI2Device::setDepthVideoMode(const OpenNI2VideoMode& video_mode) throw (OpenNI2Exception)
+  void OpenNI2Device::setDepthVideoMode(const OpenNI2VideoMode& video_mode) throw ()
   {
     boost::shared_ptr<openni::VideoStream> stream = getDepthVideoStream();
 
@@ -642,7 +642,7 @@ namespace openni2_wrapper
     return (output_width <= input_width && output_height <= input_height && input_width % output_width == 0 && input_height % output_height == 0 );
   }
 
-  void OpenNI2Device::setAutoExposure(bool enable) throw (OpenNI2Exception)
+  void OpenNI2Device::setAutoExposure(bool enable) throw ()
   {
     boost::shared_ptr<openni::VideoStream> stream = getColorVideoStream();
 
@@ -658,7 +658,7 @@ namespace openni2_wrapper
 
     }
   }
-  void OpenNI2Device::setAutoWhiteBalance(bool enable) throw (OpenNI2Exception)
+  void OpenNI2Device::setAutoWhiteBalance(bool enable) throw ()
   {
     boost::shared_ptr<openni::VideoStream> stream = getColorVideoStream();
 
@@ -733,7 +733,7 @@ namespace openni2_wrapper
   depth_frame_listener->setCallback(callback);
   }*/
 
-  boost::shared_ptr<openni::VideoStream> OpenNI2Device::getIRVideoStream() const throw (OpenNI2Exception)
+  boost::shared_ptr<openni::VideoStream> OpenNI2Device::getIRVideoStream() const throw ()
   {
     if (ir_video_stream_.get() == 0)
     {
@@ -749,7 +749,7 @@ namespace openni2_wrapper
     return ir_video_stream_;
   }
 
-  boost::shared_ptr<openni::VideoStream> OpenNI2Device::getColorVideoStream() const throw (OpenNI2Exception)
+  boost::shared_ptr<openni::VideoStream> OpenNI2Device::getColorVideoStream() const throw ()
   {
     if (color_video_stream_.get() == 0)
     {
@@ -765,7 +765,7 @@ namespace openni2_wrapper
     return color_video_stream_;
   }
 
-  boost::shared_ptr<openni::VideoStream> OpenNI2Device::getDepthVideoStream() const throw (OpenNI2Exception)
+  boost::shared_ptr<openni::VideoStream> OpenNI2Device::getDepthVideoStream() const throw ()
   {
     if (depth_video_stream_.get() == 0)
     {
@@ -848,7 +848,7 @@ namespace openni2_wrapper
     //printf("processed color frame %i, (%i)\n", frame.getFrameIndex(), (int) format );
 
     // Convert frame to PCL image type, based on pixel format
-    if (format == PixelFormat::PIXEL_FORMAT_YUV422)
+    if (format == openni::PIXEL_FORMAT_YUV422)
       image = boost::make_shared<openni_wrapper::ImageYUV422> (frame);
     else //if (format == PixelFormat::PIXEL_FORMAT_RGB888)
       image = boost::make_shared<openni_wrapper::ImageRGB24> (frame);

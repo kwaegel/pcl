@@ -57,7 +57,7 @@ namespace openni2_wrapper
 
     // This may not actually be a sigleton yet. Need to work out cross-dll incerface.
     // Based on http://stackoverflow.com/a/13431981/1789618
-    static boost::shared_ptr<OpenNI2DeviceManager> OpenNI2DeviceManager::getInstance()
+    static boost::shared_ptr<OpenNI2DeviceManager> getInstance()
     {
       /*if (singelton_.get()==0)
       singelton_ = boost::make_shared<OpenNI2DeviceManager>();

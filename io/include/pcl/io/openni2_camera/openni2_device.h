@@ -80,7 +80,7 @@ namespace openni2_wrapper
     typedef boost::function<void(boost::shared_ptr<IRImage>, void* cookie) > IRImageCallbackFunction;
     typedef unsigned CallbackHandle;
 
-    OpenNI2Device(const std::string& device_URI) throw (OpenNI2Exception);
+    OpenNI2Device(const std::string& device_URI) throw ();
     virtual ~OpenNI2Device();
 
     const std::string getUri() const;
@@ -112,12 +112,12 @@ namespace openni2_wrapper
     bool isDepthStreamStarted();
 
     bool isImageRegistrationModeSupported() const;
-    void setImageRegistrationMode(bool enabled) throw (OpenNI2Exception);
-    void setDepthColorSync(bool enabled) throw (OpenNI2Exception);
+    void setImageRegistrationMode(bool enabled) throw ();
+    void setDepthColorSync(bool enabled) throw ();
 
-    const OpenNI2VideoMode getIRVideoMode() throw (OpenNI2Exception);
-    const OpenNI2VideoMode getColorVideoMode() throw (OpenNI2Exception);
-    const OpenNI2VideoMode getDepthVideoMode() throw (OpenNI2Exception);
+    const OpenNI2VideoMode getIRVideoMode() throw ();
+    const OpenNI2VideoMode getColorVideoMode() throw ();
+    const OpenNI2VideoMode getDepthVideoMode() throw ();
 
     const std::vector<OpenNI2VideoMode>& getSupportedIRVideoModes() const;
     const std::vector<OpenNI2VideoMode>& getSupportedColorVideoModes() const;
@@ -127,13 +127,13 @@ namespace openni2_wrapper
     bool isColorVideoModeSupported(const OpenNI2VideoMode& video_mode) const;
     bool isDepthVideoModeSupported(const OpenNI2VideoMode& video_mode) const;
 
-    bool findCompatibleIRMode(const OpenNI2VideoMode& check_mode, OpenNI2VideoMode& mode) const throw (OpenNI2Exception);
-    bool findCompatibleColorMode(const OpenNI2VideoMode& check_mode, OpenNI2VideoMode& mode) const throw (OpenNI2Exception);
-    bool findCompatibleDepthMode(const OpenNI2VideoMode& check_mode, OpenNI2VideoMode& mode) const throw (OpenNI2Exception);
+    bool findCompatibleIRMode(const OpenNI2VideoMode& check_mode, OpenNI2VideoMode& mode) const throw ();
+    bool findCompatibleColorMode(const OpenNI2VideoMode& check_mode, OpenNI2VideoMode& mode) const throw ();
+    bool findCompatibleDepthMode(const OpenNI2VideoMode& check_mode, OpenNI2VideoMode& mode) const throw ();
 
-    void setIRVideoMode(const OpenNI2VideoMode& video_mode) throw (OpenNI2Exception);
-    void setColorVideoMode(const OpenNI2VideoMode& video_mode) throw (OpenNI2Exception);
-    void setDepthVideoMode(const OpenNI2VideoMode& video_mode) throw (OpenNI2Exception);
+    void setIRVideoMode(const OpenNI2VideoMode& video_mode) throw ();
+    void setColorVideoMode(const OpenNI2VideoMode& video_mode) throw ();
+    void setDepthVideoMode(const OpenNI2VideoMode& video_mode) throw ();
 
     OpenNI2VideoMode getDefaultIRMode() const;
     OpenNI2VideoMode getDefaultColorMode() const;
@@ -147,8 +147,8 @@ namespace openni2_wrapper
     float getColorFocalLength (int output_y_resolution) const;
     float getDepthFocalLength (int output_y_resolution) const;
 
-    void setAutoExposure(bool enable) throw (OpenNI2Exception);
-    void setAutoWhiteBalance(bool enable) throw (OpenNI2Exception);
+    void setAutoExposure(bool enable) throw ();
+    void setAutoWhiteBalance(bool enable) throw ();
 
     bool isSynchronized() { return false; };
     bool isSynchronizationSupported(){ return false; }
@@ -244,16 +244,16 @@ namespace openni2_wrapper
   protected:
     void shutdown();
 
-    boost::shared_ptr<openni::VideoStream> getIRVideoStream() const throw (OpenNI2Exception);
-    boost::shared_ptr<openni::VideoStream> getColorVideoStream() const throw (OpenNI2Exception);
-    boost::shared_ptr<openni::VideoStream> getDepthVideoStream() const throw (OpenNI2Exception);
+    boost::shared_ptr<openni::VideoStream> getIRVideoStream() const throw ();
+    boost::shared_ptr<openni::VideoStream> getColorVideoStream() const throw ();
+    boost::shared_ptr<openni::VideoStream> getDepthVideoStream() const throw ();
 
     void processColorFrame(openni::VideoFrameRef& image);
     void processDepthFrame(openni::VideoFrameRef& image);
     void processIRFrame(openni::VideoFrameRef& image);
 
     bool findCompatibleVideoMode (const std::vector<OpenNI2VideoMode> supportedModes, 
-      const OpenNI2VideoMode& output_mode, OpenNI2VideoMode& mode) const;
+      const OpenNI2VideoMode& output_mode, OpenNI2VideoMode& mode) const throw();
     bool resizingSupported (size_t input_width, size_t input_height, size_t output_width, size_t output_height) const;
 
     // Members
