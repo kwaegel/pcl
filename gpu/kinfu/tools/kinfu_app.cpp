@@ -203,7 +203,7 @@ vector<string> getPcdFilesInDir(const string& directory)
 
 struct SampledScopeTime : public StopWatch
 {          
-  enum { EACH = 33 };
+  enum { EACH = 33 }; // Average over [EACH] frames
   SampledScopeTime(int& time_ms) : time_ms_(time_ms) {}
   ~SampledScopeTime()
   {
@@ -646,8 +646,10 @@ struct KinFuApp
 {
   enum { PCD_BIN = 1, PCD_ASCII = 2, PLY = 3, MESH_PLY = 7, MESH_VTK = 8 };
   
-  KinFuApp(pcl::Grabber& source, float vsz, int icp, int viz) : exit_ (false), scan_ (false), scan_mesh_(false), scan_volume_ (false), independent_camera_ (false),
-    registration_ (false), integrate_colors_ (false), focal_length_(-1.f), capture_ (source), scene_cloud_view_(viz), image_view_(viz), time_ms_(0), icp_(icp), viz_(viz)
+  KinFuApp(pcl::Grabber& source, float vsz, int icp, int viz) 
+    : exit_ (false), scan_ (false), scan_mesh_(false), scan_volume_ (false), independent_camera_ (false),
+    registration_ (false), integrate_colors_ (false), focal_length_(-1.f), 
+    capture_ (source), scene_cloud_view_(viz), image_view_(viz), time_ms_(0), icp_(icp), viz_(viz)
   {    
     //Init Kinfu Tracker
     Eigen::Vector3f volume_size = Vector3f::Constant (vsz/*meters*/);    
@@ -829,7 +831,7 @@ struct KinFuApp
       setViewerPose (*scene_cloud_view_.cloud_viewer_, kinfu_.getCameraPose());
   }
   
-  void source_cb1_device(const boost::shared_ptr<openni_wrapper::DepthImage>& depth_wrapper)  
+  void source_device_depth(const boost::shared_ptr<openni_wrapper::DepthImage>& depth_wrapper)  
   {        
     {
       boost::mutex::scoped_try_lock lock(data_ready_mutex_);
@@ -847,7 +849,7 @@ struct KinFuApp
     data_ready_cond_.notify_one();
   }
 
-  void source_cb2_device(const boost::shared_ptr<openni_wrapper::Image>& image_wrapper, const boost::shared_ptr<openni_wrapper::DepthImage>& depth_wrapper, float)
+  void source_device_rgbd(const boost::shared_ptr<openni_wrapper::Image>& image_wrapper, const boost::shared_ptr<openni_wrapper::DepthImage>& depth_wrapper, float)
   {
     {
       boost::mutex::scoped_try_lock lock(data_ready_mutex_);
@@ -874,7 +876,7 @@ struct KinFuApp
   }
 
 
-   void source_cb1_oni(const boost::shared_ptr<openni_wrapper::DepthImage>& depth_wrapper)  
+   void source_oni_depth(const boost::shared_ptr<openni_wrapper::DepthImage>& depth_wrapper)  
   {        
     {
       boost::mutex::scoped_lock lock(data_ready_mutex_);
@@ -892,7 +894,7 @@ struct KinFuApp
     data_ready_cond_.notify_one();
   }
 
-  void source_cb2_oni(const boost::shared_ptr<openni_wrapper::Image>& image_wrapper, const boost::shared_ptr<openni_wrapper::DepthImage>& depth_wrapper, float)
+  void source_oni_rgbd(const boost::shared_ptr<openni_wrapper::Image>& image_wrapper, const boost::shared_ptr<openni_wrapper::DepthImage>& depth_wrapper, float)
   {
     {
       boost::mutex::scoped_lock lock(data_ready_mutex_);
@@ -925,23 +927,23 @@ struct KinFuApp
     using namespace openni_wrapper;
     typedef boost::shared_ptr<DepthImage> DepthImagePtr;
     typedef boost::shared_ptr<Image> ImagePtr;
-        
-    boost::function<void (const ImagePtr&, const DepthImagePtr&, float constant)> func1_dev = boost::bind (&KinFuApp::source_cb2_device, this, _1, _2, _3);
-    boost::function<void (const DepthImagePtr&)> func2_dev = boost::bind (&KinFuApp::source_cb1_device, this, _1);
-
-    boost::function<void (const ImagePtr&, const DepthImagePtr&, float constant)> func1_oni = boost::bind (&KinFuApp::source_cb2_oni, this, _1, _2, _3);
-    boost::function<void (const DepthImagePtr&)> func2_oni = boost::bind (&KinFuApp::source_cb1_oni, this, _1);
     
+    boost::function<void (const ImagePtr&, const DepthImagePtr&, float constant)> func_device_rgbd = boost::bind (&KinFuApp::source_device_rgbd, this, _1, _2, _3);
+    boost::function<void (const DepthImagePtr&)> func_device_depth = boost::bind (&KinFuApp::source_device_depth, this, _1);
+
+    boost::function<void (const ImagePtr&, const DepthImagePtr&, float constant)> func_oni_rgbd = boost::bind (&KinFuApp::source_oni_rgbd, this, _1, _2, _3);
+    boost::function<void (const DepthImagePtr&)> func_oni_depth = boost::bind (&KinFuApp::source_oni_depth, this, _1);
+    
+    bool is_oni = false;
 #ifdef HAVE_OPENNI
-    bool is_oni = dynamic_cast<pcl::ONIGrabber*>(&capture_) != 0;
-#else
-	bool is_oni = false;
+    is_oni = dynamic_cast<pcl::ONIGrabber*>(&capture_) != 0;
 #endif
-    boost::function<void (const ImagePtr&, const DepthImagePtr&, float constant)> func1 = is_oni ? func1_oni : func1_dev;
-    boost::function<void (const DepthImagePtr&)> func2 = is_oni ? func2_oni : func2_dev;
+
+    boost::function<void (const ImagePtr&, const DepthImagePtr&, float constant)> func_rgbd = is_oni ? func_oni_rgbd : func_device_rgbd;
+    boost::function<void (const DepthImagePtr&)> func_depth = is_oni ? func_oni_depth : func_device_depth;
 
     bool need_colors = integrate_colors_ || registration_;
-    boost::signals2::connection c = need_colors ? capture_.registerCallback (func1) : capture_.registerCallback (func2);
+    boost::signals2::connection c = need_colors ? capture_.registerCallback (func_rgbd) : capture_.registerCallback (func_depth);
 
     {
       boost::unique_lock<boost::mutex> lock(data_ready_mutex_);
