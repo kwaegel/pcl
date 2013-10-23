@@ -6,6 +6,7 @@
 # OPENNI2_INCLUDE_DIRS - Directories containing the OPENNI 2 include files.
 # OPENNI2_LIBRARIES - Libraries needed to use OPENNI 2.
 # OPENNI2_DEFINITIONS - Compiler flags for OPENNI 2.
+# OPENNI2_REDIST_DIR - Binary directory for OPENNI 2.
 # 
 # For libusb-1.0, add USB_10_ROOT if not found
 

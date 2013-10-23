@@ -349,24 +349,30 @@ struct CurrentFrameCloudView
 
 struct ImageView
 {
-  ImageView(int viz) : viz_(viz), paint_image_ (false), accumulate_views_ (false)
+  ImageView(int showViz) : showVisualization_(showViz), paint_image_ (false), accumulate_views_ (false)
   {
-    if (viz_)
+    if (showVisualization_)
     {
         viewerScene_ = pcl::visualization::ImageViewer::Ptr(new pcl::visualization::ImageViewer);
         viewerDepth_ = pcl::visualization::ImageViewer::Ptr(new pcl::visualization::ImageViewer);
+        //viewerColor_ = pcl::visualization::ImageViewer::Ptr(new pcl::visualization::ImageViewer);
 
         viewerScene_->setWindowTitle ("View3D from ray tracing");
         viewerScene_->setPosition (0, 0);
+
         viewerDepth_->setWindowTitle ("Kinect Depth stream");
         viewerDepth_->setPosition (640, 0);
-        //viewerColor_.setWindowTitle ("Kinect RGB stream");
+
+
+        //viewerColor_->setWindowTitle ("Kinect RGB stream");
+        //viewerColor_->setPosition (640, 640);
     }
   }
 
   void
   showScene (KinfuTracker& kinfu, const PtrStepSz<const KinfuTracker::PixelRGB>& rgb24, bool registration, Eigen::Affine3f* pose_ptr = 0)
   {
+    // If a new pose is defined, raycast to get view. Otherwize just use the current image.
     if (pose_ptr)
     {
         raycaster_ptr_->run(kinfu.volume(), *pose_ptr);
@@ -375,6 +381,8 @@ struct ImageView
     else
       kinfu.getImage (view_device_);
 
+
+    // If we want a color overlay on the volume rendering and don't have a seperate pose
     if (paint_image_ && registration && !pose_ptr)
     {
       colors_device_.upload (rgb24.data, rgb24.step, rgb24.rows, rgb24.cols);
@@ -384,10 +392,12 @@ struct ImageView
 
     int cols;
     view_device_.download (view_host_, cols);
-    if (viz_)
+    if (showVisualization_)
+    {
         viewerScene_->showRGBImage (reinterpret_cast<unsigned char*> (&view_host_[0]), view_device_.cols (), view_device_.rows ());    
 
-    //viewerColor_.showRGBImage ((unsigned char*)&rgb24.data, rgb24.cols, rgb24.rows);
+      //viewerColor_->showRGBImage ((unsigned char*)&rgb24.data, rgb24.cols, rgb24.rows);
+    }
 
 #ifdef HAVE_OPENCV
     if (accumulate_views_)
@@ -402,7 +412,7 @@ struct ImageView
   void
   showDepth (const PtrStepSz<const unsigned short>& depth) 
   { 
-     if (viz_)
+     if (showVisualization_)
        viewerDepth_->showShortImage (depth.data, depth.cols, depth.rows, 0, 5000, true); 
   }
   
@@ -416,7 +426,7 @@ struct ImageView
     vector<unsigned short> data;
     generated_depth_.download(data, c);
 
-    if (viz_)
+    if (showVisualization_)
         viewerDepth_->showShortImage (&data[0], generated_depth_.cols(), generated_depth_.rows(), 0, 5000, true);
   }
 
@@ -427,13 +437,13 @@ struct ImageView
     cout << "Paint image: " << (paint_image_ ? "On   (requires registration mode)" : "Off") << endl;
   }
 
-  int viz_;
+  bool showVisualization_;
   bool paint_image_;
   bool accumulate_views_;
 
-  visualization::ImageViewer::Ptr viewerScene_;
-  visualization::ImageViewer::Ptr viewerDepth_;
-  //visualization::ImageViewer viewerColor_;
+  visualization::ImageViewer::Ptr viewerScene_; // Volume view from ray tracing
+  visualization::ImageViewer::Ptr viewerDepth_; // Depth view from camera
+ // visualization::ImageViewer::Ptr viewerColor_; // Color view from camera
 
   KinfuTracker::View view_device_;
   KinfuTracker::View colors_device_;
@@ -455,14 +465,14 @@ struct SceneCloudView
 {
   enum { GPU_Connected6 = 0, CPU_Connected6 = 1, CPU_Connected26 = 2 };
 
-  SceneCloudView(int viz) : viz_(viz), extraction_mode_ (GPU_Connected6), compute_normals_ (false), valid_combined_ (false), cube_added_(false)
+  SceneCloudView(bool showViz) : showVisualization_(showViz), extraction_mode_ (GPU_Connected6), compute_normals_ (false), valid_combined_ (false), cube_added_(false)
   {
     cloud_ptr_ = PointCloud<PointXYZ>::Ptr (new PointCloud<PointXYZ>);
     normals_ptr_ = PointCloud<Normal>::Ptr (new PointCloud<Normal>);
     combined_ptr_ = PointCloud<PointNormal>::Ptr (new PointCloud<PointNormal>);
     point_colors_ptr_ = PointCloud<RGB>::Ptr (new PointCloud<RGB>);
 
-    if (viz_)
+    if (showVisualization_)
     {
         cloud_viewer_ = pcl::visualization::PCLVisualizer::Ptr( new pcl::visualization::PCLVisualizer("Scene Cloud Viewer") );
 
@@ -525,7 +535,7 @@ struct SceneCloudView
     size_t points_size = valid_combined_ ? combined_ptr_->points.size () : cloud_ptr_->points.size ();
     cout << "Done.  Cloud size: " << points_size / 1000 << "K" << endl;
 
-    if (viz_)
+    if (showVisualization_)
     {
         cloud_viewer_->removeAllPointClouds ();
         if (valid_combined_)
@@ -545,7 +555,7 @@ struct SceneCloudView
   void
   toggleCube(const Eigen::Vector3f& size)
   {
-      if (!viz_)
+      if (!showVisualization_)
           return;
 
       if (cube_added_)
@@ -580,7 +590,7 @@ struct SceneCloudView
   void
   clearClouds (bool print_message = false)
   {
-    if (!viz_)
+    if (!showVisualization_)
         return;
 
     cloud_viewer_->removeAllPointClouds ();
@@ -593,7 +603,7 @@ struct SceneCloudView
   void
   showMesh(KinfuTracker& kinfu, bool /*integrate_colors*/)
   {
-    if (!viz_)
+    if (!showVisualization_)
        return;
 
     ScopeTimeT time ("Mesh Extraction");
@@ -612,7 +622,7 @@ struct SceneCloudView
     cout << "Done.  Triangles number: " << triangles_device.size() / MarchingCubes::POINTS_PER_TRIANGLE / 1000 << "K" << endl;
   }
     
-  int viz_;
+  bool showVisualization_;
   int extraction_mode_;
   bool compute_normals_;
   bool valid_combined_;
@@ -646,10 +656,10 @@ struct KinFuApp
 {
   enum { PCD_BIN = 1, PCD_ASCII = 2, PLY = 3, MESH_PLY = 7, MESH_VTK = 8 };
   
-  KinFuApp(pcl::Grabber& source, float vsz, int icp, int viz) 
+  KinFuApp(pcl::Grabber& source, float vsz, bool icp, bool showViz) 
     : exit_ (false), scan_ (false), scan_mesh_(false), scan_volume_ (false), independent_camera_ (false),
     registration_ (false), integrate_colors_ (false), focal_length_(-1.f), 
-    capture_ (source), scene_cloud_view_(viz), image_view_(viz), time_ms_(0), icp_(icp), viz_(viz)
+    capture_ (source), scene_cloud_view_(showViz), image_view_(showViz), time_ms_(0), icp_(icp), showVisualization_(showViz)
   {    
     //Init Kinfu Tracker
     Eigen::Vector3f volume_size = Vector3f::Constant (vsz/*meters*/);    
@@ -674,7 +684,7 @@ struct KinFuApp
     tsdf_cloud_ptr_ = pcl::PointCloud<pcl::PointXYZI>::Ptr (new pcl::PointCloud<pcl::PointXYZI>);
     image_view_.raycaster_ptr_ = RayCaster::Ptr( new RayCaster(kinfu_.rows (), kinfu_.cols ()) );
 
-    if (viz_)
+    if (showVisualization_)
     {
         scene_cloud_view_.cloud_viewer_->registerKeyboardCallback (keyboard_callback, (void*)this);
         image_view_.viewerScene_->registerKeyboardCallback (keyboard_callback, (void*)this);
@@ -774,6 +784,7 @@ struct KinFuApp
       
     if (has_data)
     {
+      // Upload depth and color data to the GPU
       depth_device_.upload (depth.data, depth.step, depth.rows, depth.cols);
       if (integrate_colors_)
           image_view_.colors_device_.upload (rgb24.data, rgb24.step, rgb24.rows, rgb24.cols);
@@ -781,13 +792,14 @@ struct KinFuApp
       {
         SampledScopeTime fps(time_ms_);
     
-        //run kinfu algorithm
+        // Process next frame
         if (integrate_colors_)
           has_image = kinfu_ (depth_device_, image_view_.colors_device_);
         else
           has_image = kinfu_ (depth_device_);                  
       }
       
+      // Show the raw depth image from the camera
       image_view_.showDepth (depth);
       //image_view_.showGeneratedDepth(kinfu_, kinfu_.getCameraPose());
     }
@@ -812,17 +824,20 @@ struct KinFuApp
         cout << "[!] tsdf volume download is disabled" << endl << endl;
     }
 
+
     if (scan_mesh_)
     {
         scan_mesh_ = false;
         scene_cloud_view_.showMesh(kinfu_, integrate_colors_);
     }
      
+    // If there is a new image of the fused volume, render the volume
     if (has_image)
     {
       Eigen::Affine3f viewer_pose = getViewerPose(*scene_cloud_view_.cloud_viewer_);
       image_view_.showScene (kinfu_, rgb24, registration_, independent_camera_ ? &viewer_pose : 0);
     }    
+
 
     if (current_frame_cloud_view_)
       current_frame_cloud_view_->show (kinfu_);    
@@ -951,8 +966,8 @@ struct KinFuApp
       if (!triggered_capture)
           capture_.start (); // Start stream
 
-      bool scene_view_not_stopped= viz_ ? !scene_cloud_view_.cloud_viewer_->wasStopped () : true;
-      bool image_view_not_stopped= viz_ ? !image_view_.viewerScene_->wasStopped () : true;
+      bool scene_view_not_stopped= showVisualization_ ? !scene_cloud_view_.cloud_viewer_->wasStopped () : true;
+      bool image_view_not_stopped= showVisualization_ ? !image_view_.viewerScene_->wasStopped () : true;
           
       while (!exit_ && scene_view_not_stopped && image_view_not_stopped)
       { 
@@ -964,7 +979,7 @@ struct KinFuApp
         catch (const std::bad_alloc& /*e*/) { cout << "Bad alloc" << endl; break; }
         catch (const std::exception& /*e*/) { cout << "Exception" << endl; break; }
         
-        if (viz_)
+        if (showVisualization_)
             scene_cloud_view_.cloud_viewer_->spinOnce (3);
       }
       
@@ -1064,7 +1079,7 @@ struct KinFuApp
   PtrStepSz<const KinfuTracker::PixelRGB> rgb24_;
 
   int time_ms_;
-  int icp_, viz_;
+  bool icp_, showVisualization_;
 
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   static void
@@ -1241,12 +1256,12 @@ main (int argc, char* argv[])
   float volume_size = 3.f;
   pc::parse_argument (argc, argv, "-volume_size", volume_size);
 
-  int icp = 1, visualization = 1;
+  bool useICP = 1, useVisualization = 1;
   std::vector<float> depth_intrinsics;
-  pc::parse_argument (argc, argv, "--icp", icp);
-  pc::parse_argument (argc, argv, "--viz", visualization);
+  pc::parse_argument (argc, argv, "--icp", useICP);
+  pc::parse_argument (argc, argv, "--viz", useVisualization);
         
-  KinFuApp app (*capture, volume_size, icp, visualization);
+  KinFuApp app (*capture, volume_size, useICP, useVisualization);
 
   if (pc::parse_argument (argc, argv, "-eval", eval_folder) > 0)
     app.toggleEvaluationMode(eval_folder, match_file);
