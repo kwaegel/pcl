@@ -48,7 +48,7 @@ if(WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 8)
 endif(WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 8)
 
 #add a hint so that it can find it without the pkg-config
-find_path(OPENNI2_INCLUDE_DIR OpenNI.h
+find_path(OPENNI2_INCLUDE_DIRS OpenNI.h
           HINTS ${PC_OPENNI2_INCLUDEDIR} ${PC_OPENNI2_INCLUDE_DIRS} /usr/include/openni2 /usr/include/ni "${OPENNI2_ROOT}" "$ENV{OPENNI2_ROOT}"
           PATHS "$ENV{OPENNI2_INCLUDE${OPENNI2_SUFFIX}}"
           PATH_SUFFIXES openni include Include)
@@ -66,9 +66,9 @@ else()
 endif()
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(OpenNI2 DEFAULT_MSG OPENNI2_LIBRARY OPENNI2_INCLUDE_DIR)
+find_package_handle_standard_args(OpenNI2 DEFAULT_MSG OPENNI2_LIBRARY OPENNI2_INCLUDE_DIRS)
     
-mark_as_advanced(OPENNI2_LIBRARY OPENNI2_INCLUDE_DIR)
+mark_as_advanced(OPENNI2_LIBRARY OPENNI2_INCLUDE_DIRS)
 
 if(OPENNI2_FOUND)  
   # Add the include directories
