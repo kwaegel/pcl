@@ -13,17 +13,17 @@ else(NOT VTK_FOUND)
 endif(NOT VTK_FOUND)
 
 # OpenNI found?
-if(NOT OPENNI_FOUND)
+if(NOT OPENNI_FOUND OR NOT OPENNI2_FOUND)
     set(DEFAULT FALSE)
     set(REASON "OpenNI was not found.")
-else(NOT OPENNI_FOUND)
+else(NOT OPENNI_FOUND OR NOT OPENNI2_FOUND)
     set(DEFAULT TRUE)
     set(REASON)
-endif(NOT OPENNI_FOUND)
+endif(NOT OPENNI_FOUND OR NOT OPENNI2_FOUND)
 
 set(DEFAULT FALSE)
 PCL_SUBSYS_OPTION(build "${SUBSYS_NAME}" "${SUBSYS_DESC}" ${DEFAULT} "${REASON}")
-PCL_SUBSYS_DEPEND(build "${SUBSYS_NAME}" DEPS ${SUBSYS_DEPS} OPT_DEPS openni vtk)
+PCL_SUBSYS_DEPEND(build "${SUBSYS_NAME}" DEPS ${SUBSYS_DEPS} OPT_DEPS openni openni2 vtk)
 
 if(build)
 
@@ -85,7 +85,7 @@ if(build)
     PCL_ADD_EXECUTABLE(pcl_stereo_ground_segmentation "${SUBSYS_NAME}" src/stereo_ground_segmentation.cpp)
     target_link_libraries(pcl_stereo_ground_segmentation pcl_common pcl_io pcl_filters pcl_visualization pcl_segmentation pcl_features pcl_stereo)
 
-    if (OPENNI_FOUND AND BUILD_OPENNI)
+    if ((OPENNI_FOUND AND BUILD_OPENNI) OR (OPENNI2_FOUND AND BUILD_OPENNI2))
 
 #      PCL_ADD_EXECUTABLE_OPT_BUNDLE(pcl_openni_grab_frame "${SUBSYS_NAME}" src/openni_grab_frame.cpp)
 #      target_link_libraries(pcl_openni_grab_frame pcl_common pcl_io pcl_visualization)
