@@ -52,6 +52,8 @@
 #include <string>
 #include <vector>
 
+using std::vector;
+
 using openni_wrapper::Image;
 using openni_wrapper::DepthImage;
 using openni_wrapper::IRImage;
@@ -119,17 +121,17 @@ namespace openni2_wrapper
     const OpenNI2VideoMode getColorVideoMode() throw ();
     const OpenNI2VideoMode getDepthVideoMode() throw ();
 
-    const std::vector<OpenNI2VideoMode>& getSupportedIRVideoModes() const;
-    const std::vector<OpenNI2VideoMode>& getSupportedColorVideoModes() const;
-    const std::vector<OpenNI2VideoMode>& getSupportedDepthVideoModes() const;
+    const vector<OpenNI2VideoMode>& getSupportedIRVideoModes() const;
+    const vector<OpenNI2VideoMode>& getSupportedColorVideoModes() const;
+    const vector<OpenNI2VideoMode>& getSupportedDepthVideoModes() const;
 
     bool isIRVideoModeSupported(const OpenNI2VideoMode& video_mode) const;
     bool isColorVideoModeSupported(const OpenNI2VideoMode& video_mode) const;
     bool isDepthVideoModeSupported(const OpenNI2VideoMode& video_mode) const;
 
-    bool findCompatibleIRMode(const OpenNI2VideoMode& check_mode, OpenNI2VideoMode& mode) const throw ();
-    bool findCompatibleColorMode(const OpenNI2VideoMode& check_mode, OpenNI2VideoMode& mode) const throw ();
-    bool findCompatibleDepthMode(const OpenNI2VideoMode& check_mode, OpenNI2VideoMode& mode) const throw ();
+    bool findCompatibleIRMode(   const OpenNI2VideoMode& requested_mode, OpenNI2VideoMode& actual_mode) const throw ();
+    bool findCompatibleColorMode(const OpenNI2VideoMode& requested_mode, OpenNI2VideoMode& actual_mode) const throw ();
+    bool findCompatibleDepthMode(const OpenNI2VideoMode& requested_mode, OpenNI2VideoMode& actual_mode) const throw ();
 
     void setIRVideoMode(const OpenNI2VideoMode& video_mode) throw ();
     void setColorVideoMode(const OpenNI2VideoMode& video_mode) throw ();

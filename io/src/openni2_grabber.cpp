@@ -83,7 +83,7 @@ pcl::OpenNIGrabber::OpenNIGrabber (const std::string& device_id, const Mode& dep
   , image_signal_ (), depth_image_signal_ (), ir_image_signal_ (), image_depth_image_signal_ ()
   , ir_depth_image_signal_ (), point_cloud_signal_ (), point_cloud_i_signal_ ()
   , point_cloud_rgb_signal_ (), point_cloud_rgba_signal_ ()
-  , config2xn_map_ (), depth_callback_handle (), image_callback_handle (), ir_callback_handle ()
+  , config2oni_map_ (), depth_callback_handle (), image_callback_handle (), ir_callback_handle ()
   , running_ (false)
   , rgb_focal_length_x_ (std::numeric_limits<double>::quiet_NaN ())
   , rgb_focal_length_y_ (std::numeric_limits<double>::quiet_NaN ())
@@ -241,7 +241,7 @@ void
         //&& !device_->isDepthRegistered () 
           && device_->isImageRegistrationModeSupported ())
       {
-        device_->setImageRegistrationMode(true);
+        //device_->setImageRegistrationMode(true);
       }
       device_->startDepthStream ();
       //startSynchronization ();
@@ -351,12 +351,12 @@ void
       //printf("[%s] searching for device with index = %d\n", getName().c_str(), index);
       device_ = deviceManager->getDeviceByIndex (index - 1);
     }
-    else if (!device_id.empty ())
-    {
-      //printf("[%s] searching for device with serial number = %s\n", getName().c_str(), device_id.c_str());
-      // TODO: re-enable
-      //device_ = deviceManager->getDeviceBySerialNumber (device_id);
-    }
+    //else if (!device_id.empty ())
+    //{
+    //  printf("[%s] searching for device with serial number = %s\n", getName().c_str(), device_id.c_str());
+    //   TODO: re-enable?
+    //  device_ = deviceManager->getDeviceBySerialNumber (device_id);
+    //}
     else
     {
       device_ = deviceManager->getAnyDevice();
@@ -385,7 +385,7 @@ void
   if (depth_mode != OpenNI_Default_Mode)
   {
     VideoMode actual_depth_md;
-    if (!mapConfigMode2XnMode (depth_mode, depth_md) || !device_->findCompatibleDepthMode (depth_md, actual_depth_md))
+    if (!mapMode2XnMode (depth_mode, depth_md) || !device_->findCompatibleDepthMode (depth_md, actual_depth_md))
       PCL_THROW_EXCEPTION (pcl::IOException, "could not find compatible depth stream mode " << static_cast<int> (depth_mode) );
 
     VideoMode current_depth_md =  device_->getDepthVideoMode ();
@@ -406,7 +406,7 @@ void
     if (image_mode != OpenNI_Default_Mode)
     {
       VideoMode actual_image_md;
-      if (!mapConfigMode2XnMode (image_mode, image_md) || !device_->findCompatibleColorMode (image_md, actual_image_md))
+      if (!mapMode2XnMode (image_mode, image_md) || !device_->findCompatibleColorMode (image_md, actual_image_md))
         PCL_THROW_EXCEPTION (pcl::IOException, "could not find compatible image stream mode " << static_cast<int> (image_mode) );
 
       VideoMode current_image_md =  device_->getColorVideoMode ();
@@ -852,26 +852,26 @@ void
 
   openni2_wrapper::OpenNI2VideoMode output_mode;
 
-  config2xn_map_[OpenNI_SXGA_15Hz] = VideoMode(XN_SXGA_X_RES, XN_SXGA_Y_RES, 15);
+  config2oni_map_[OpenNI_SXGA_15Hz] = VideoMode(XN_SXGA_X_RES, XN_SXGA_Y_RES, 15);
 
-  config2xn_map_[OpenNI_VGA_25Hz] = VideoMode(XN_VGA_X_RES, XN_VGA_Y_RES, 25);
-  config2xn_map_[OpenNI_VGA_30Hz] = VideoMode(XN_VGA_X_RES, XN_VGA_Y_RES, 30);
+  config2oni_map_[OpenNI_VGA_25Hz] = VideoMode(XN_VGA_X_RES, XN_VGA_Y_RES, 25);
+  config2oni_map_[OpenNI_VGA_30Hz] = VideoMode(XN_VGA_X_RES, XN_VGA_Y_RES, 30);
 
-  config2xn_map_[OpenNI_QVGA_25Hz] = VideoMode(XN_QVGA_X_RES, XN_QVGA_Y_RES, 25);
-  config2xn_map_[OpenNI_QVGA_30Hz] = VideoMode(XN_QVGA_X_RES, XN_QVGA_Y_RES, 30);
-  config2xn_map_[OpenNI_QVGA_60Hz] = VideoMode(XN_QVGA_X_RES, XN_QVGA_Y_RES, 60);
+  config2oni_map_[OpenNI_QVGA_25Hz] = VideoMode(XN_QVGA_X_RES, XN_QVGA_Y_RES, 25);
+  config2oni_map_[OpenNI_QVGA_30Hz] = VideoMode(XN_QVGA_X_RES, XN_QVGA_Y_RES, 30);
+  config2oni_map_[OpenNI_QVGA_60Hz] = VideoMode(XN_QVGA_X_RES, XN_QVGA_Y_RES, 60);
 
-  config2xn_map_[OpenNI_QQVGA_25Hz] = VideoMode(XN_QQVGA_X_RES, XN_QQVGA_Y_RES, 25);
-  config2xn_map_[OpenNI_QQVGA_30Hz] = VideoMode(XN_QQVGA_X_RES, XN_QQVGA_Y_RES, 30);
-  config2xn_map_[OpenNI_QQVGA_60Hz] = VideoMode(XN_QQVGA_X_RES, XN_QQVGA_Y_RES, 60);
+  config2oni_map_[OpenNI_QQVGA_25Hz] = VideoMode(XN_QQVGA_X_RES, XN_QQVGA_Y_RES, 25);
+  config2oni_map_[OpenNI_QQVGA_30Hz] = VideoMode(XN_QQVGA_X_RES, XN_QQVGA_Y_RES, 30);
+  config2oni_map_[OpenNI_QQVGA_60Hz] = VideoMode(XN_QQVGA_X_RES, XN_QQVGA_Y_RES, 60);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool
-  pcl::OpenNIGrabber::mapConfigMode2XnMode (int mode, openni2_wrapper::OpenNI2VideoMode &xnmode) const
+  pcl::OpenNIGrabber::mapMode2XnMode (int mode, openni2_wrapper::OpenNI2VideoMode &xnmode) const
 {
-  std::map<int, openni2_wrapper::OpenNI2VideoMode>::const_iterator it = config2xn_map_.find (mode);
-  if (it != config2xn_map_.end ())
+  std::map<int, openni2_wrapper::OpenNI2VideoMode>::const_iterator it = config2oni_map_.find (mode);
+  if (it != config2oni_map_.end ())
   {
     xnmode = it->second;
     return (true);
@@ -888,7 +888,7 @@ std::vector<std::pair<int, openni2_wrapper::OpenNI2VideoMode> >
 {
   openni2_wrapper::OpenNI2VideoMode dummy;
   std::vector<std::pair<int, openni2_wrapper::OpenNI2VideoMode> > result;
-  for (std::map<int, openni2_wrapper::OpenNI2VideoMode>::const_iterator it = config2xn_map_.begin (); it != config2xn_map_.end (); ++it)
+  for (std::map<int, openni2_wrapper::OpenNI2VideoMode>::const_iterator it = config2oni_map_.begin (); it != config2oni_map_.end (); ++it)
   {
     if (device_->findCompatibleDepthMode (it->second, dummy))
       result.push_back (*it);
@@ -903,7 +903,7 @@ std::vector<std::pair<int, openni2_wrapper::OpenNI2VideoMode> >
 {
   openni2_wrapper::OpenNI2VideoMode dummy;
   std::vector<std::pair<int, openni2_wrapper::OpenNI2VideoMode> > result;
-  for (std::map<int, openni2_wrapper::OpenNI2VideoMode>::const_iterator it = config2xn_map_.begin (); it != config2xn_map_.end (); ++it)
+  for (std::map<int, openni2_wrapper::OpenNI2VideoMode>::const_iterator it = config2oni_map_.begin (); it != config2oni_map_.end (); ++it)
   {
     if (device_->findCompatibleColorMode (it->second, dummy))
       result.push_back (*it);

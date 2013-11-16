@@ -56,19 +56,9 @@ namespace openni2_wrapper
   }
 
 
-  const OpenNI2VideoMode openni2_convert(const openni::VideoMode& input)
-  {
-    OpenNI2VideoMode output;
 
-    output.x_resolution_ = input.getResolutionX();
-    output.y_resolution_ = input.getResolutionY();
-    output.frame_rate_ = input.getFps();
-    output.pixel_format_ = static_cast<PixelFormat>(input.getPixelFormat());
 
-    return output;
-  }
-
-  const openni::VideoMode openni2_convert(const OpenNI2VideoMode& input)
+  const openni::VideoMode grabberModeToOpenniMode(const OpenNI2VideoMode& input)
   {
 
     openni::VideoMode output;
@@ -81,7 +71,19 @@ namespace openni2_wrapper
   }
 
 
-  const std::vector<OpenNI2VideoMode> openni2_convert(const openni::Array<openni::VideoMode>& input)
+  const OpenNI2VideoMode openniModeToGrabberMode(const openni::VideoMode& input)
+  {
+    OpenNI2VideoMode output;
+
+    output.x_resolution_ = input.getResolutionX();
+    output.y_resolution_ = input.getResolutionY();
+    output.frame_rate_ = input.getFps();
+    output.pixel_format_ = static_cast<PixelFormat>(input.getPixelFormat());
+
+    return output;
+  }
+
+  const std::vector<OpenNI2VideoMode> openniModeToGrabberMode(const openni::Array<openni::VideoMode>& input)
   {
     std::vector<OpenNI2VideoMode> output;
 
@@ -90,7 +92,7 @@ namespace openni2_wrapper
     output.reserve(size);
 
     for (int i=0; i<size; ++i)
-      output.push_back(openni2_convert(input[i]));
+      output.push_back(openniModeToGrabberMode(input[i]));
 
     return output;
   }

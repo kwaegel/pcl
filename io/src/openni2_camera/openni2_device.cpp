@@ -49,7 +49,6 @@
 namespace openni2_wrapper
 {
   using openni::VideoMode;
-  typedef OpenNI2VideoMode WrapVideoMode;
 
   OpenNI2Device::OpenNI2Device(const std::string& device_URI) throw () :
     openni_device_(),
@@ -95,6 +94,12 @@ namespace openni2_wrapper
     if (status != openni::STATUS_OK)
       THROW_OPENNI_EXCEPTION ("reading the value for pixels with no depth estimation failed. Reason: %s", openni::OpenNI::getExtendedError());
     no_sample_value_ = 0;	// HACK
+
+
+    // Set default resolution
+    setColorVideoMode(getDefaultColorMode());
+    setDepthVideoMode(getDefaultDepthMode());
+    setIRVideoMode(getDefaultIRMode());
 
 
     device_info_ = boost::make_shared<openni::DeviceInfo>();
@@ -375,54 +380,6 @@ namespace openni2_wrapper
     return depth_video_started_;
   }
 
-  const std::vector<OpenNI2VideoMode>& OpenNI2Device::getSupportedIRVideoModes() const
-  {
-    boost::shared_ptr<openni::VideoStream> stream = getIRVideoStream();
-
-    ir_video_modes_.clear();
-
-    if (stream)
-    {
-      const openni::SensorInfo& sensor_info = stream->getSensorInfo();
-
-      ir_video_modes_ = openni2_convert(sensor_info.getSupportedVideoModes());
-    }
-
-    return ir_video_modes_;
-  }
-
-  const std::vector<OpenNI2VideoMode>& OpenNI2Device::getSupportedColorVideoModes() const
-  {
-    boost::shared_ptr<openni::VideoStream> stream = getColorVideoStream();
-
-    color_video_modes_.clear();
-
-    if (stream)
-    {
-      const openni::SensorInfo& sensor_info = stream->getSensorInfo();
-
-      color_video_modes_ = openni2_convert(sensor_info.getSupportedVideoModes());
-    }
-
-    return color_video_modes_;
-  }
-
-  const std::vector<OpenNI2VideoMode>& OpenNI2Device::getSupportedDepthVideoModes() const
-  {
-    boost::shared_ptr<openni::VideoStream> stream = getDepthVideoStream();
-
-    depth_video_modes_.clear();
-
-    if (stream)
-    {
-      const openni::SensorInfo& sensor_info = stream->getSensorInfo();
-
-      depth_video_modes_ = openni2_convert(sensor_info.getSupportedVideoModes());
-    }
-
-    return depth_video_modes_;
-  }
-
   bool OpenNI2Device::isImageRegistrationModeSupported() const
   {
     return openni_device_->isImageRegistrationModeSupported(openni::IMAGE_REGISTRATION_DEPTH_TO_COLOR);
@@ -430,7 +387,8 @@ namespace openni2_wrapper
 
   void OpenNI2Device::setImageRegistrationMode(bool enabled) throw ()
   {
-    if (isImageRegistrationModeSupported())
+    bool registrationSupported = isImageRegistrationModeSupported();
+    if (registrationSupported)
     {
       image_registration_activated_ = enabled;
       if (enabled)
@@ -465,14 +423,13 @@ namespace openni2_wrapper
     {
       openni::VideoMode video_mode = stream->getVideoMode();
 
-      ret = openni2_convert(video_mode);
+      ret = openniModeToGrabberMode(video_mode);
     }
     else
       THROW_OPENNI_EXCEPTION("Could not create video stream.");
 
     return ret;
   }
-
   const OpenNI2VideoMode OpenNI2Device::getColorVideoMode() throw ()
   {
     OpenNI2VideoMode ret;
@@ -483,14 +440,13 @@ namespace openni2_wrapper
     {
       openni::VideoMode video_mode = stream->getVideoMode();
 
-      ret = openni2_convert(video_mode);
+      ret = openniModeToGrabberMode(video_mode);
     }
     else
       THROW_OPENNI_EXCEPTION("Could not create video stream.");
 
     return ret;
   }
-
   const OpenNI2VideoMode OpenNI2Device::getDepthVideoMode() throw ()
   {
     OpenNI2VideoMode ret;
@@ -501,7 +457,7 @@ namespace openni2_wrapper
     {
       openni::VideoMode video_mode = stream->getVideoMode();
 
-      ret = openni2_convert(video_mode);
+      ret = openniModeToGrabberMode(video_mode);
     }
     else
       THROW_OPENNI_EXCEPTION("Could not create video stream.");
@@ -515,33 +471,31 @@ namespace openni2_wrapper
 
     if (stream)
     {
-      const openni::VideoMode videoMode = openni2_convert(video_mode);
+      const openni::VideoMode videoMode = grabberModeToOpenniMode(video_mode);
       const openni::Status rc = stream->setVideoMode(videoMode);
       if (rc != openni::STATUS_OK)
         THROW_OPENNI_EXCEPTION("Couldn't set IR video mode: \n%s\n", openni::OpenNI::getExtendedError());
     }
   }
-
   void OpenNI2Device::setColorVideoMode(const OpenNI2VideoMode& video_mode) throw ()
   {
     boost::shared_ptr<openni::VideoStream> stream = getColorVideoStream();
 
     if (stream)
     {
-      const openni::VideoMode videoMode = openni2_convert(video_mode);
+      openni::VideoMode videoMode = grabberModeToOpenniMode(video_mode);
       const openni::Status rc = stream->setVideoMode(videoMode);
       if (rc != openni::STATUS_OK)
         THROW_OPENNI_EXCEPTION("Couldn't set color video mode: \n%s\n", openni::OpenNI::getExtendedError());
     }
   }
-
   void OpenNI2Device::setDepthVideoMode(const OpenNI2VideoMode& video_mode) throw ()
   {
     boost::shared_ptr<openni::VideoStream> stream = getDepthVideoStream();
 
     if (stream)
     {
-      const openni::VideoMode videoMode = openni2_convert(video_mode);
+      const openni::VideoMode videoMode = grabberModeToOpenniMode(video_mode);
       const openni::Status rc = stream->setVideoMode(videoMode);
       if (rc != openni::STATUS_OK)
         THROW_OPENNI_EXCEPTION("Couldn't set depth video mode: \n%s\n", openni::OpenNI::getExtendedError());
@@ -550,86 +504,149 @@ namespace openni2_wrapper
 
   OpenNI2VideoMode OpenNI2Device::getDefaultIRMode() const
   {
-    return getSupportedIRVideoModes().at(0);
+    // Search for and return VGA@30 Hz mode
+    auto modeList = getSupportedIRVideoModes();
+    for (auto modeItr = begin(modeList); modeItr != end(modeList); modeItr++)
+    {
+      OpenNI2VideoMode mode = *modeItr;
+      if ( (mode.x_resolution_ == 640) && (mode.y_resolution_ == 480) && (mode.frame_rate_ = 30.0) )
+        return mode;
+    }
+    return modeList.at(0); // Return first mode if we can't find VGA
   }
   OpenNI2VideoMode OpenNI2Device::getDefaultColorMode() const
   {
-    return getSupportedColorVideoModes().at(0);
+    // Search for and return VGA@30 Hz mode
+    auto modeList = getSupportedColorVideoModes();
+    for (auto modeItr = begin(modeList); modeItr != end(modeList); modeItr++)
+    {
+      OpenNI2VideoMode mode = *modeItr;
+      if ( (mode.x_resolution_ == 640) && (mode.y_resolution_ == 480) && (mode.frame_rate_ = 30.0) )
+        return mode;
+    }
+    return modeList.at(0); // Return first mode if we can't find VGA
   }
   OpenNI2VideoMode OpenNI2Device::getDefaultDepthMode() const
   {
-    return getSupportedDepthVideoModes().at(0);
+    // Search for and return VGA@30 Hz mode
+    auto modeList = getSupportedDepthVideoModes();
+    for (auto modeItr = begin(modeList); modeItr != end(modeList); modeItr++)
+    {
+      OpenNI2VideoMode mode = *modeItr;
+      if ( (mode.x_resolution_ == 640) && (mode.y_resolution_ == 480) && (mode.frame_rate_ = 30.0) )
+        return mode;
+    }
+    return modeList.at(0); // Return first mode if we can't find VGA
   }
 
-  bool 
-    OpenNI2Device::findCompatibleIRMode (const WrapVideoMode& output_mode, WrapVideoMode& mode) const throw ()
+  const std::vector<OpenNI2VideoMode>& OpenNI2Device::getSupportedIRVideoModes() const
   {
-    if ( isIRVideoModeSupported(output_mode) )
+    boost::shared_ptr<openni::VideoStream> stream = getIRVideoStream();
+    ir_video_modes_.clear();
+
+    if (stream)
     {
-      mode = output_mode;
+      const openni::SensorInfo& sensor_info = stream->getSensorInfo();
+
+      ir_video_modes_ = openniModeToGrabberMode(sensor_info.getSupportedVideoModes());
+    }
+
+    return ir_video_modes_;
+  }
+  const std::vector<OpenNI2VideoMode>& OpenNI2Device::getSupportedColorVideoModes() const
+  {
+    boost::shared_ptr<openni::VideoStream> stream = getColorVideoStream();
+
+    color_video_modes_.clear();
+
+    if (stream)
+    {
+      const openni::SensorInfo& sensor_info = stream->getSensorInfo();
+
+      color_video_modes_ = openniModeToGrabberMode(sensor_info.getSupportedVideoModes());
+    }
+
+    return color_video_modes_;
+  }
+  const std::vector<OpenNI2VideoMode>& OpenNI2Device::getSupportedDepthVideoModes() const
+  {
+    boost::shared_ptr<openni::VideoStream> stream = getDepthVideoStream();
+
+    depth_video_modes_.clear();
+
+    if (stream)
+    {
+      const openni::SensorInfo& sensor_info = stream->getSensorInfo();
+
+      depth_video_modes_ = openniModeToGrabberMode(sensor_info.getSupportedVideoModes());
+    }
+
+    return depth_video_modes_;
+  }
+
+  bool OpenNI2Device::findCompatibleIRMode (const OpenNI2VideoMode& requested_mode, OpenNI2VideoMode& actual_mode) const throw ()
+  {
+    if ( isIRVideoModeSupported(requested_mode) )
+    {
+      actual_mode = requested_mode;
       return (true);
     }
     else
     {
       // Find a resize-compatable mode
-      std::vector<WrapVideoMode> supportedModes = getSupportedIRVideoModes();
-      bool found = findCompatibleVideoMode(supportedModes, output_mode, mode);
+      std::vector<OpenNI2VideoMode> supportedModes = getSupportedIRVideoModes();
+      bool found = findCompatibleVideoMode(supportedModes, requested_mode, actual_mode);
       return (found);
     }
   }
-
-  bool 
-    OpenNI2Device::findCompatibleColorMode (const WrapVideoMode& output_mode, WrapVideoMode& mode) const throw ()
+  bool OpenNI2Device::findCompatibleColorMode (const OpenNI2VideoMode& requested_mode, OpenNI2VideoMode& actual_mode) const throw ()
   {
-    if ( isColorVideoModeSupported(output_mode) )
+    if ( isColorVideoModeSupported(requested_mode) )
     {
-      mode = output_mode;
+      actual_mode = requested_mode;
       return (true);
     }
     else
     {
       // Find a resize-compatable mode
-      std::vector<WrapVideoMode> supportedModes = getSupportedColorVideoModes();
-      bool found = findCompatibleVideoMode(supportedModes, output_mode, mode);
+      std::vector<OpenNI2VideoMode> supportedModes = getSupportedColorVideoModes();
+      bool found = findCompatibleVideoMode(supportedModes, requested_mode, actual_mode);
       return (found);
     }
   }
-
-  bool 
-    OpenNI2Device::findCompatibleDepthMode (const WrapVideoMode& output_mode, WrapVideoMode& mode) const throw ()
+  bool OpenNI2Device::findCompatibleDepthMode (const OpenNI2VideoMode& requested_mode, OpenNI2VideoMode& actual_mode) const throw ()
   {
-    if ( isDepthVideoModeSupported(output_mode) )
+    if ( isDepthVideoModeSupported(requested_mode) )
     {
-      mode = output_mode;
+      actual_mode = requested_mode;
       return (true);
     }
     else
     {
       // Find a resize-compatable mode
-      std::vector<WrapVideoMode> supportedModes = getSupportedDepthVideoModes();
-      bool found = findCompatibleVideoMode(supportedModes, output_mode, mode);
+      std::vector<OpenNI2VideoMode> supportedModes = getSupportedDepthVideoModes();
+      bool found = findCompatibleVideoMode(supportedModes, requested_mode, actual_mode);
       return (found);
     }
   }
 
   // Generic support method for the above findCompatable...Mode calls above
-  bool 
-    OpenNI2Device::findCompatibleVideoMode (const std::vector<WrapVideoMode> supportedModes, const WrapVideoMode& output_mode, WrapVideoMode& mode) const throw ()
+  bool OpenNI2Device::findCompatibleVideoMode (const std::vector<OpenNI2VideoMode> supportedModes, const OpenNI2VideoMode& requested_mode, OpenNI2VideoMode& actual_mode) const throw ()
   {
     bool found = false;
-    for (std::vector<WrapVideoMode>::const_iterator modeIt = supportedModes.begin(); modeIt != supportedModes.end(); ++modeIt)
+    for (std::vector<OpenNI2VideoMode>::const_iterator modeIt = supportedModes.begin(); modeIt != supportedModes.end(); ++modeIt)
     {
-      if (modeIt->frame_rate_ == output_mode.frame_rate_ 
-        && resizingSupported(modeIt->x_resolution_, modeIt->y_resolution_, output_mode.x_resolution_, output_mode.y_resolution_))
+      if (modeIt->frame_rate_ == requested_mode.frame_rate_ 
+        && resizingSupported(modeIt->x_resolution_, modeIt->y_resolution_, requested_mode.x_resolution_, requested_mode.y_resolution_))
       {
         if (found)
         { // check wheter the new mode is better -> smaller than the current one.
-          if (mode.x_resolution_ * mode.x_resolution_ > modeIt->x_resolution_ * modeIt->y_resolution_ )
-            mode = *modeIt;
+          if (actual_mode.x_resolution_ * actual_mode.x_resolution_ > modeIt->x_resolution_ * modeIt->y_resolution_ )
+            actual_mode = *modeIt;
         }
         else
         {
-          mode = *modeIt;
+          actual_mode = *modeIt;
           found = true;
         }
       }
@@ -845,7 +862,6 @@ namespace openni2_wrapper
   {
     openni::PixelFormat format = frame.getVideoMode().getPixelFormat();
     boost::shared_ptr<openni_wrapper::Image> image;
-    //printf("processed color frame %i, (%i)\n", frame.getFrameIndex(), (int) format );
 
     // Convert frame to PCL image type, based on pixel format
     if (format == openni::PIXEL_FORMAT_YUV422)

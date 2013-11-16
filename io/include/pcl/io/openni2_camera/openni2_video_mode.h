@@ -35,24 +35,27 @@
 #include <cstddef>
 #include <ostream>
 
+#include <OpenNI.h>
+
 namespace openni2_wrapper
 {
 
   // copied from OniEnums.h
   typedef enum
   {
-    // Depth
+	  // Depth
     PIXEL_FORMAT_DEPTH_1_MM = 100,
     PIXEL_FORMAT_DEPTH_100_UM = 101,
     PIXEL_FORMAT_SHIFT_9_2 = 102,
     PIXEL_FORMAT_SHIFT_9_3 = 103,
 
-    // Color
+	  // Color
     PIXEL_FORMAT_RGB888 = 200,
     PIXEL_FORMAT_YUV422 = 201,
     PIXEL_FORMAT_GRAY8 = 202,
     PIXEL_FORMAT_GRAY16 = 203,
     PIXEL_FORMAT_JPEG = 204,
+    PIXEL_FORMAT_YUYV = 205,
   } PixelFormat;
 
   struct OpenNI2VideoMode

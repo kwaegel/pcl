@@ -344,10 +344,10 @@ namespace pcl
     void
       stopSynchronization ();
 
-    // TODO: rename to mapConfigMode2OniMode
+    // TODO: rename to mapMode2OniMode
     /** \brief Map config modes. */
     bool
-      mapConfigMode2XnMode (int mode, openni2_wrapper::OpenNI2VideoMode& videoMode) const;
+      mapMode2XnMode (int mode, openni2_wrapper::OpenNI2VideoMode& videoMode) const;
 
     // callback methods
     /** \brief RGB image callback. */
@@ -465,7 +465,8 @@ namespace pcl
           return false;
       }
     } ;
-    std::map<int, openni2_wrapper::OpenNI2VideoMode> config2xn_map_;
+    // Mapping from config (enum) modes to native OpenNI modes
+    std::map<int, openni2_wrapper::OpenNI2VideoMode> config2oni_map_;
 
     openni2_wrapper::OpenNI2Device::CallbackHandle depth_callback_handle;
     openni2_wrapper::OpenNI2Device::CallbackHandle image_callback_handle;
