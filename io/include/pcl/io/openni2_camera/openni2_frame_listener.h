@@ -40,7 +40,7 @@
 
 namespace openni2_wrapper
 {
-  typedef boost::function<void(openni::VideoFrameRef& image)> FrameCallbackFunction;
+  typedef boost::function<void(openni::VideoFrameRef& image, boost::posix_time::ptime t_readFrameTimestamp)> FrameCallbackFunction;
 
   class OpenNI2TimerFilter;
 

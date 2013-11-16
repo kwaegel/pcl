@@ -57,9 +57,11 @@ namespace openni2_wrapper
   {
     stream.readFrame(&m_frame);
 
+    boost::posix_time::ptime t_readFrameTimestamp = boost::posix_time::microsec_clock::local_time();
+
     if (m_frame.isValid() && callback_)
     {
-      callback_(m_frame);
+      callback_(m_frame, t_readFrameTimestamp);
     }
 
   }

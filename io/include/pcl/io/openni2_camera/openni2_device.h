@@ -80,6 +80,7 @@ namespace openni2_wrapper
     typedef boost::function<void(boost::shared_ptr<Image>, void* cookie) > ImageCallbackFunction;
     typedef boost::function<void(boost::shared_ptr<DepthImage>, void* cookie) > DepthImageCallbackFunction;
     typedef boost::function<void(boost::shared_ptr<IRImage>, void* cookie) > IRImageCallbackFunction;
+    typedef boost::posix_time::ptime Timestamp;
     typedef unsigned CallbackHandle;
 
     OpenNI2Device(const std::string& device_URI) throw ();
@@ -250,9 +251,9 @@ namespace openni2_wrapper
     boost::shared_ptr<openni::VideoStream> getColorVideoStream() const throw ();
     boost::shared_ptr<openni::VideoStream> getDepthVideoStream() const throw ();
 
-    void processColorFrame(openni::VideoFrameRef& image);
-    void processDepthFrame(openni::VideoFrameRef& image);
-    void processIRFrame(openni::VideoFrameRef& image);
+    void processColorFrame(openni::VideoFrameRef& image, Timestamp t_readFrameTimestamp);
+    void processDepthFrame(openni::VideoFrameRef& image, Timestamp t_readFrameTimestamp);
+    void processIRFrame(openni::VideoFrameRef& image, Timestamp t_readFrameTimestamp);
 
     bool findCompatibleVideoMode (const std::vector<OpenNI2VideoMode> supportedModes, 
       const OpenNI2VideoMode& output_mode, OpenNI2VideoMode& mode) const throw();

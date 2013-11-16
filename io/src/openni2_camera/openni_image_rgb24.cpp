@@ -5,14 +5,16 @@
 
 namespace openni_wrapper
 {
-  ImageRGB24::ImageRGB24 (openni::VideoFrameRef image_meta_data) throw ()
+    ImageRGB24::ImageRGB24 (openni::VideoFrameRef image_meta_data) throw ()
     : Image (image_meta_data)
-  {
-  }
+  { }
+
+  ImageRGB24::ImageRGB24 (openni::VideoFrameRef image_meta_data, Timestamp t_readFrameTimestamp) throw ()
+    : Image (image_meta_data, t_readFrameTimestamp)
+  { }
 
   ImageRGB24::~ImageRGB24 () throw ()
-  {
-  }
+  { }
 
   void ImageRGB24::fillGrayscale (unsigned width, unsigned height, unsigned char* gray_buffer, unsigned gray_line_step) const
   {

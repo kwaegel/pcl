@@ -55,6 +55,7 @@ namespace openni_wrapper
   public:
 
     ImageRGB24 (openni::VideoFrameRef image_meta_data) throw ();
+    ImageRGB24 (openni::VideoFrameRef image_meta_data, Timestamp t_readFrameTimestamp) throw ();
     virtual ~ImageRGB24 () throw ();
 
     inline virtual Encoding
