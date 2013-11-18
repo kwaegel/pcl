@@ -32,45 +32,39 @@
 #ifndef OPENNI2_FRAME_LISTENER_H_
 #define OPENNI2_FRAME_LISTENER_H_
 
-#include "pcl/io/openni2_camera/openni2_device.h"
-
-#include <vector>
+#include <boost/function.hpp>
 
 #include "OpenNI.h"
 
 namespace openni2_wrapper
 {
-  typedef boost::function<void(openni::VideoFrameRef& image, boost::posix_time::ptime t_readFrameTimestamp)> FrameCallbackFunction;
-
-  class OpenNI2TimerFilter;
+  typedef boost::function<void(openni::VideoStream& stream)> StreamCallbackFunction;
 
   class OpenNI2FrameListener : public openni::VideoStream::NewFrameListener
   {
   public:
 
-    OpenNI2FrameListener();
+    OpenNI2FrameListener()
+      : callback_(0) {}
+    OpenNI2FrameListener(StreamCallbackFunction cb)
+      : callback_(cb) {}
 
     virtual ~OpenNI2FrameListener()
     { };
 
-    void onNewFrame(openni::VideoStream& stream);
+    inline void onNewFrame(openni::VideoStream& stream)
+    {
+      if (callback_)
+        callback_(stream);
+    }
 
-    void setCallback(FrameCallbackFunction cb)
+    void setCallback(StreamCallbackFunction cb)
     {
       callback_ = cb;
     }
 
-    void setUseDeviceTimer(bool enable);
-
   private:
-    openni::VideoFrameRef m_frame;
-
-    FrameCallbackFunction callback_;
-
-    bool user_device_timer_;
-    boost::shared_ptr<OpenNI2TimerFilter> timer_filter_;
-
-    double prev_time_stamp_;
+    StreamCallbackFunction callback_;
   };
 
 }

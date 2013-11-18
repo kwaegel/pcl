@@ -31,39 +31,22 @@
 #include "OpenNI.h"
 
 #include "pcl/io/openni2_camera/openni2_frame_listener.h"
-#include "pcl/io/openni2_camera/openni2_timer_filter.h"
-
-#define TIME_FILTER_LENGTH 15
 
 namespace openni2_wrapper
 {
 
-  OpenNI2FrameListener::OpenNI2FrameListener() :
-    callback_(0),
-    user_device_timer_(false),
-    timer_filter_(new OpenNI2TimerFilter(TIME_FILTER_LENGTH)),
-    prev_time_stamp_(0.0)
+  OpenNI2FrameListener::OpenNI2FrameListener()
+    : callback_(0)
   { }
 
-  void OpenNI2FrameListener::setUseDeviceTimer(bool enable)
-  {
-    user_device_timer_ = enable;
-
-    if (user_device_timer_)
-      timer_filter_->clear();
-  }
+  OpenNI2FrameListener::OpenNI2FrameListener(StreamCallbackFunction cb)
+    : callback_(cb)
+  { }
 
   void OpenNI2FrameListener::onNewFrame(openni::VideoStream& stream)
   {
-    stream.readFrame(&m_frame);
-
-    boost::posix_time::ptime t_readFrameTimestamp = boost::posix_time::microsec_clock::local_time();
-
-    if (m_frame.isValid() && callback_)
-    {
-      callback_(m_frame, t_readFrameTimestamp);
-    }
-
+    if(callback_)
+      callback_(stream);
   }
 
 }

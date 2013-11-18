@@ -142,10 +142,6 @@ namespace openni2_wrapper
     OpenNI2VideoMode getDefaultColorMode() const;
     OpenNI2VideoMode getDefaultDepthMode() const;
 
-    //void setIRFrameCallback(FrameCallbackFunction callback);
-    //void setColorFrameCallback(FrameCallbackFunction callback);
-    //void setDepthFrameCallback(FrameCallbackFunction callback);
-
     float getIRFocalLength (int output_y_resolution) const;
     float getColorFocalLength (int output_y_resolution) const;
     float getDepthFocalLength (int output_y_resolution) const;
@@ -251,9 +247,9 @@ namespace openni2_wrapper
     boost::shared_ptr<openni::VideoStream> getColorVideoStream() const throw ();
     boost::shared_ptr<openni::VideoStream> getDepthVideoStream() const throw ();
 
-    void processColorFrame(openni::VideoFrameRef& image, Timestamp t_readFrameTimestamp);
-    void processDepthFrame(openni::VideoFrameRef& image, Timestamp t_readFrameTimestamp);
-    void processIRFrame(openni::VideoFrameRef& image, Timestamp t_readFrameTimestamp);
+    void processColorFrame(openni::VideoStream& stream);
+    void processDepthFrame(openni::VideoStream& stream);
+    void processIRFrame(openni::VideoStream& stream);
 
     bool findCompatibleVideoMode (const std::vector<OpenNI2VideoMode> supportedModes, 
       const OpenNI2VideoMode& output_mode, OpenNI2VideoMode& mode) const throw();

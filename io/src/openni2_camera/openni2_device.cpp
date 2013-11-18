@@ -94,7 +94,7 @@ namespace openni2_wrapper
     //status = depth_video_stream_->getProperty("NoSampleValue", no_sample_value_);
     if (status != openni::STATUS_OK)
       THROW_OPENNI_EXCEPTION ("reading the value for pixels with no depth estimation failed. Reason: %s", openni::OpenNI::getExtendedError());
-    no_sample_value_ = 0;	// HACK
+    no_sample_value_ = getDepthVideoStream()->getMinPixelValue();
 
 
     // Set default resolution
@@ -107,13 +107,13 @@ namespace openni2_wrapper
     *device_info_ = openni_device_->getDeviceInfo();
 
     color_frame_listener = boost::make_shared<OpenNI2FrameListener>();
-    color_frame_listener->setCallback(boost::bind(&OpenNI2Device::processColorFrame, this, _1, _2));
+    color_frame_listener->setCallback(boost::bind(&OpenNI2Device::processColorFrame, this, _1));
 
     depth_frame_listener = boost::make_shared<OpenNI2FrameListener>();
-    depth_frame_listener->setCallback(boost::bind(&OpenNI2Device::processDepthFrame, this, _1, _2));
+    depth_frame_listener->setCallback(boost::bind(&OpenNI2Device::processDepthFrame, this, _1));
 
     ir_frame_listener = boost::make_shared<OpenNI2FrameListener>();
-    ir_frame_listener->setCallback(boost::bind(&OpenNI2Device::processIRFrame, this, _1, _2));
+    ir_frame_listener->setCallback(boost::bind(&OpenNI2Device::processIRFrame, this, _1));
   }
 
   OpenNI2Device::~OpenNI2Device()
@@ -716,40 +716,14 @@ namespace openni2_wrapper
 
     if (stream)
     {
-      openni::CameraSettings* camera_seeting = stream->getCameraSettings();
-      if (camera_seeting)
-        ret = camera_seeting->getAutoWhiteBalanceEnabled();
+      openni::CameraSettings* camera_setting = stream->getCameraSettings();
+      if (camera_setting)
+        ret = camera_setting->getAutoWhiteBalanceEnabled();
     }
 
     return ret;
   }
 
-  void OpenNI2Device::setUseDeviceTimer(bool enable)
-  {
-    if (ir_frame_listener)
-      ir_frame_listener->setUseDeviceTimer(enable);
-
-    if (color_frame_listener)
-      color_frame_listener->setUseDeviceTimer(enable);
-
-    if (depth_frame_listener)
-      depth_frame_listener->setUseDeviceTimer(enable);
-  }
-
-  /*void OpenNI2Device::setIRFrameCallback(FrameCallbackFunction callback)
-  {
-  ir_frame_listener->setCallback(callback);
-  }
-
-  void OpenNI2Device::setColorFrameCallback(FrameCallbackFunction callback)
-  {
-  color_frame_listener->setCallback(callback);
-  }
-
-  void OpenNI2Device::setDepthFrameCallback(FrameCallbackFunction callback)
-  {
-  depth_frame_listener->setCallback(callback);
-  }*/
 
   boost::shared_ptr<openni::VideoStream> OpenNI2Device::getIRVideoStream() const throw ()
   {
@@ -859,11 +833,17 @@ namespace openni2_wrapper
 
 
   // Convert VideoFrameRef into pcl::Image and forward to registered callbacks
-  void OpenNI2Device::processColorFrame(openni::VideoFrameRef& frame, Timestamp t_readFrameTimestamp)
+  void OpenNI2Device::processColorFrame(openni::VideoStream& stream)
   {
+    openni::VideoFrameRef frame;
+    stream.readFrame(&frame);
+
+    boost::posix_time::ptime t_readFrameTimestamp = boost::posix_time::microsec_clock::local_time();
+
     using boost::posix_time::time_duration;
     time_duration delta = boost::posix_time::microsec_clock::local_time() - t_readFrameTimestamp;
     std::cout << "#" << frame.getFrameIndex() << ": +" << delta.total_milliseconds() << ",\t processColorFrame called\n";
+
 
     openni::PixelFormat format = frame.getVideoMode().getPixelFormat();
     boost::shared_ptr<openni_wrapper::Image> image;
@@ -880,8 +860,14 @@ namespace openni2_wrapper
       callbackIt->second.operator()(image);
     }
   }
-  void OpenNI2Device::processDepthFrame(openni::VideoFrameRef& frame, Timestamp t_readFrameTimestamp)
+
+
+  void OpenNI2Device::processDepthFrame(openni::VideoStream& stream)
   {
+    openni::VideoFrameRef frame;
+    stream.readFrame(&frame);
+
+    boost::posix_time::ptime t_readFrameTimestamp = boost::posix_time::microsec_clock::local_time();
     int frameWidth = frame.getWidth();
     float focalLength = getDepthFocalLength (frameWidth);
 
@@ -895,9 +881,14 @@ namespace openni2_wrapper
       callbackIt->second.operator()(image);
     }
   }
-  void OpenNI2Device::processIRFrame(openni::VideoFrameRef& frame, Timestamp t_readFrameTimestamp)
+
+
+  void OpenNI2Device::processIRFrame(openni::VideoStream& stream)
   {
-    printf("processed IR frame %i\n", frame.getFrameIndex() );
+    openni::VideoFrameRef frame;
+    stream.readFrame(&frame);
+    boost::posix_time::ptime t_readFrameTimestamp = boost::posix_time::microsec_clock::local_time();
+
     boost::shared_ptr<IRImage> image = boost::make_shared<openni_wrapper::IRImage> (frame);
 
     // Notify listeners of new frame
