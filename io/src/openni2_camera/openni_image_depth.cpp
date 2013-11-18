@@ -133,7 +133,7 @@ namespace openni_wrapper
           *depth_buffer = bad_point;
         else
         {
-          *depth_buffer = static_cast<unsigned short>( pixel );
+          *depth_buffer = static_cast<unsigned short>( pixel ) * 0.001f;  // millimeters to meters
         }
       }
       // if we have padding
