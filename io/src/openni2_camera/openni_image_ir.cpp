@@ -45,8 +45,42 @@
 
 using namespace std;
 
-namespace openni_wrapper
-{
+using openni_wrapper::IRImage;
+
+  IRImage::IRImage (openni::VideoFrameRef ir_meta_data) throw ()
+  : ir_md_ (ir_meta_data)
+  {
+  }
+
+  IRImage::~IRImage () throw ()
+  {
+  }
+
+  unsigned IRImage::getWidth () const throw ()
+  {
+	  return ir_md_.getWidth();
+  }
+
+  unsigned IRImage::getHeight () const throw ()
+  {
+	  return ir_md_.getHeight();
+  }
+
+  unsigned IRImage::getFrameID () const throw ()
+  {
+	  return ir_md_.getFrameIndex();
+  }
+
+  unsigned long IRImage::getTimeStamp () const throw ()
+  {
+	  return static_cast<unsigned long> (ir_md_.getTimestamp ());
+  }
+
+  const openni::VideoFrameRef& IRImage::getMetaData () const throw ()
+  {
+	  return ir_md_;
+  }
+
   void IRImage::fillRaw (unsigned width, unsigned height, unsigned short* ir_buffer, unsigned line_step) const
   {
     if (width > ir_md_.getWidth () || height > ir_md_.getHeight ())
@@ -87,7 +121,6 @@ namespace openni_wrapper
       }
     }
   }
-} // namespace openni_wrapper
 
 #endif //HAVE_OPENNI
 

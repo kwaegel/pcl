@@ -169,69 +169,6 @@ namespace openni_wrapper
       uint64_t shadow_value_;
       uint64_t no_sample_value_;
   } ;
-
-  DepthImage::DepthImage (openni::VideoFrameRef depth_meta_data, float baseline, float focal_length, uint64_t shadow_value, uint64_t no_sample_value) throw ()
-  : depth_md_ (depth_meta_data)
-  , baseline_ (baseline)
-  , focal_length_ (focal_length)
-  , shadow_value_ (shadow_value)
-  , no_sample_value_ (no_sample_value) { }
-
-  DepthImage::~DepthImage () throw () { }
-
-  const openni::VideoFrameRef&
-  DepthImage::getDepthMetaData () const throw ()
-  {
-    return depth_md_;
-  }
-
-  float
-  DepthImage::getBaseline () const throw ()
-  {
-    return baseline_;
-  }
-
-  float
-  DepthImage::getFocalLength () const throw ()
-  {
-    return focal_length_;
-  }
-
-  uint64_t
-  DepthImage::getShadowValue () const throw ()
-  {
-    return shadow_value_;
-  }
-
-  uint64_t
-  DepthImage::getNoSampleValue () const throw ()
-  {
-    return no_sample_value_;
-  }
-
-  unsigned
-  DepthImage::getWidth () const throw ()
-  {
-    return depth_md_.getWidth();
-  }
-
-  unsigned
-  DepthImage::getHeight () const throw ()
-  {
-    return depth_md_.getHeight ();
-  }
-
-  unsigned
-  DepthImage::getFrameID () const throw ()
-  {
-    return depth_md_.getFrameIndex ();
-  }
-
-  unsigned long
-  DepthImage::getTimeStamp () const throw ()
-  {
-    return static_cast<unsigned long> (depth_md_.getTimestamp ());
-  }
 } // namespace
 #endif
 #endif //__OPENNI_DEPTH_IMAGE
