@@ -116,6 +116,7 @@ namespace openni2_wrapper
 
     bool isImageRegistrationModeSupported() const;
     void setImageRegistrationMode(bool enabled) throw ();
+    bool isDepthRegistered() const throw ();
     void setDepthColorSync(bool enabled) throw ();
 
     const OpenNI2VideoMode getIRVideoMode() throw ();
@@ -283,6 +284,11 @@ namespace openni2_wrapper
     // For depth calculations
     /** \brief distance between the projector and the IR camera*/
     float baseline_;
+    /** \brief focal length for IR camera producing depth information in native SXGA mode */
+      float depth_focal_length_SXGA_;
+    /** \brief focal length for regular camera producing color images in native SXGA mode */
+    float rgb_focal_length_SXGA_;
+
     /** the value for shadow (occluded pixels) */
     uint64_t shadow_value_;
     /** the value for pixels without a valid disparity measurement */

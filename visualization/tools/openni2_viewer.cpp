@@ -37,6 +37,7 @@
 
 #define MEASURE_FUNCTION_TIME
 #include <pcl/common/time.h> //fps calculations
+#include <pcl/common/angles.h>
 #include <pcl/io/openni2_grabber.h>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/visualization/boost.h>
@@ -111,7 +112,7 @@ public:
 	typedef pcl::PointCloud<PointType> Cloud;
 	typedef typename Cloud::ConstPtr CloudConstPtr;
 
-	OpenNI2Viewer (pcl::Grabber& grabber)
+	OpenNI2Viewer (pcl::OpenNIGrabber& grabber)
 		: cloud_viewer_ (new pcl::visualization::PCLVisualizer ("PCL OpenNI2 cloud"))
 		, image_viewer_ ()
 		, grabber_ (grabber)
@@ -181,6 +182,7 @@ public:
 	{
 		cloud_viewer_->registerMouseCallback (&OpenNI2Viewer::mouse_callback, *this);
 		cloud_viewer_->registerKeyboardCallback(&OpenNI2Viewer::keyboard_callback, *this);
+    cloud_viewer_->setCameraFieldOfView(pcl::deg2rad(50.0));
 		boost::function<void (const CloudConstPtr&) > cloud_cb = boost::bind (&OpenNI2Viewer::cloud_callback, this, _1);
 		boost::signals2::connection cloud_connection = grabber_.registerCallback (cloud_cb);
 
@@ -278,7 +280,7 @@ public:
 	boost::shared_ptr<pcl::visualization::PCLVisualizer> cloud_viewer_;
 	boost::shared_ptr<pcl::visualization::ImageViewer> image_viewer_;
 
-	pcl::Grabber& grabber_;
+	pcl::OpenNIGrabber& grabber_;
 	boost::mutex cloud_mutex_;
 	boost::mutex image_mutex_;
 

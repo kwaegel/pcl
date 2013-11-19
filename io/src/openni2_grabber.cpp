@@ -543,6 +543,7 @@ void
   }
 }
 
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 pcl::PointCloud<pcl::PointXYZ>::Ptr
   pcl::OpenNIGrabber::convertToXYZPointCloud (const boost::shared_ptr<openni_wrapper::DepthImage>& depth_image) const
@@ -625,6 +626,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr
   return (cloud);
 }
 
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointT> typename pcl::PointCloud<PointT>::Ptr
   pcl::OpenNIGrabber::convertToXYZRGBPointCloud (const boost::shared_ptr<openni_wrapper::Image> &image,
@@ -643,23 +645,28 @@ template <typename PointT> typename pcl::PointCloud<PointT>::Ptr
 
   cloud->points.resize (cloud->height * cloud->width);
 
-  //float constant = 1.0f / device_->getImageFocalLength (depth_width_);
-  register float constant_x = 1.0f / device_->getColorFocalLength (depth_width_);
-  register float constant_y = 1.0f / device_->getColorFocalLength (depth_width_);
-  register float centerX = ((float)cloud->width - 1.f) / 2.f;
-  register float centerY = ((float)cloud->height - 1.f) / 2.f;
+  // Generate default camera parameters
+  float fx = device_->getColorFocalLength (depth_width_); // Horizontal focal length
+  float fy = device_->getColorFocalLength (depth_width_); // Vertcal focal length
+  register float cx = ((float)cloud->width - 1.f) / 2.f;  // Center x
+  register float cy = ((float)cloud->height - 1.f) / 2.f; // Center y
 
+  // Load pre-calibrated camera parameters if they exist
   if (pcl_isfinite (rgb_focal_length_x_))
-    constant_x =  1.0f / static_cast<float> (rgb_focal_length_x_);
+    fx =  static_cast<float> (rgb_focal_length_x_);
 
   if (pcl_isfinite (rgb_focal_length_y_))
-    constant_y =  1.0f / static_cast<float> (rgb_focal_length_y_);
+    fy =  static_cast<float> (rgb_focal_length_y_);
 
   if (pcl_isfinite (rgb_principal_point_x_))
-    centerX =  static_cast<float> (rgb_principal_point_x_);
+    cx =  static_cast<float> (rgb_principal_point_x_);
 
   if (pcl_isfinite (rgb_principal_point_y_))
-    centerY =  static_cast<float> (rgb_principal_point_y_);
+    cy =  static_cast<float> (rgb_principal_point_y_);
+
+  // Get inverse focal length for calculations below
+  register float fx_inv = 1.0f / fx;
+  register float fy_inv = 1.0f / fy;
 
   register const OniDepthPixel* depth_map = (OniDepthPixel*) depth_image->getDepthMetaData().getData();
   if (depth_image->getWidth () != depth_width_ || depth_image->getHeight() != depth_height_)
@@ -716,9 +723,9 @@ template <typename PointT> typename pcl::PointCloud<PointT>::Ptr
         pixel != depth_image->getNoSampleValue() &&
         pixel != depth_image->getShadowValue() )
       {
-        pt.z = depth_map[value_idx] * 0.001f;
-        pt.x = (static_cast<float> (u) - centerX) * pt.z * constant_x;
-        pt.y = (static_cast<float> (v) - centerY) * pt.z * constant_y;
+        pt.z = depth_map[value_idx] * 0.001f;  // millimeters to meters
+        pt.x = (static_cast<float> (u) - cx) * pt.z * fx_inv;
+        pt.y = (static_cast<float> (v) - cy) * pt.z * fy_inv;
       }
       else
       {
@@ -750,12 +757,10 @@ template <typename PointT> typename pcl::PointCloud<PointT>::Ptr
     }
   }
   cloud->sensor_origin_.setZero ();
-  cloud->sensor_orientation_.w () = 1.0;
-  cloud->sensor_orientation_.x () = 0.0;
-  cloud->sensor_orientation_.y () = 0.0;
-  cloud->sensor_orientation_.z () = 0.0;
+  cloud->sensor_orientation_.setIdentity();
   return (cloud);
 }
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 pcl::PointCloud<pcl::PointXYZI>::Ptr
@@ -771,23 +776,28 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr
 
   cloud->points.resize (cloud->height * cloud->width);
 
-  //float constant = 1.0f / device_->getImageFocalLength (cloud->width);
-  register float constant_x = 1.0f / device_->getColorFocalLength (cloud->width);
-  register float constant_y = 1.0f / device_->getColorFocalLength (cloud->width);
-  register float centerX = ((float)cloud->width - 1.f) / 2.f;
-  register float centerY = ((float)cloud->height - 1.f) / 2.f;
+
+  float fx = device_->getColorFocalLength (depth_width_); // Horizontal focal length
+  float fy = device_->getColorFocalLength (depth_width_); // Vertcal focal length
+  register float cx = ((float)cloud->width - 1.f) / 2.f;  // Center x
+  register float cy = ((float)cloud->height - 1.f) / 2.f; // Center y
 
   if (pcl_isfinite (rgb_focal_length_x_))
-    constant_x =  1.0f / static_cast<float> (rgb_focal_length_x_);
+    fx =  1.0f / static_cast<float> (rgb_focal_length_x_);
 
   if (pcl_isfinite (rgb_focal_length_y_))
-    constant_y =  1.0f / static_cast<float> (rgb_focal_length_y_);
+    fy =  1.0f / static_cast<float> (rgb_focal_length_y_);
 
   if (pcl_isfinite (rgb_principal_point_x_))
-    centerX = static_cast<float>(rgb_principal_point_x_);
+    cx = static_cast<float>(rgb_principal_point_x_);
 
   if (pcl_isfinite (rgb_principal_point_y_))
-    centerY = static_cast<float>(rgb_principal_point_y_);
+    cy = static_cast<float>(rgb_principal_point_y_);
+
+  register float fx_inv = 1.0f / fx;
+  register float fy_inv = 1.0f / fy;
+
+
 
   register const OniDepthPixel* depth_map = (const OniDepthPixel*) depth_image->getDepthMetaData ().getData ();
   register const OniGrayscale16Pixel* ir_map = (OniGrayscale16Pixel*) ir_image->getMetaData ().getData ();
@@ -830,9 +840,9 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr
       }
       else
       {
-        pt.z = depth_map[depth_idx] * 0.001f;
-        pt.x = (static_cast<float> (u) - centerX) * pt.z * constant_x;
-        pt.y = (static_cast<float> (v) - centerY) * pt.z * constant_y;
+        pt.z = depth_map[depth_idx] * 0.001f; // millimeters to meters
+        pt.x = (static_cast<float> (u) - cx) * pt.z * fx;
+        pt.y = (static_cast<float> (v) - cy) * pt.z * fy;
       }
 
       pt.data_c[0] = pt.data_c[1] = pt.data_c[2] = pt.data_c[3] = 0;
@@ -840,10 +850,7 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr
     }
   }
   cloud->sensor_origin_.setZero ();
-  cloud->sensor_orientation_.w () = 1.0;
-  cloud->sensor_orientation_.x () = 0.0;
-  cloud->sensor_orientation_.y () = 0.0;
-  cloud->sensor_orientation_.z () = 0.0;
+  cloud->sensor_orientation_.setIdentity();
   return (cloud);
 }
 

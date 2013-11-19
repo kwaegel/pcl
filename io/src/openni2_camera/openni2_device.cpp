@@ -57,7 +57,9 @@ namespace openni2_wrapper
     color_video_started_(false),
     depth_video_started_(false),
     image_registration_activated_(false),
-    use_device_time_(false)
+    use_device_time_(false),
+    rgb_focal_length_SXGA_ (1050),  // Magic default value from prior calibration
+    depth_focal_length_SXGA_()
   {
     openni::Status status = openni::OpenNI::initialize();
     if (status != openni::STATUS_OK)
@@ -166,43 +168,45 @@ namespace openni2_wrapper
     return (openni_device_.get() != 0) && openni_device_->isValid();
   }
 
-  float OpenNI2Device::getIRFocalLength(int output_y_resolution) const
+  float OpenNI2Device::getIRFocalLength(int output_x_resolution) const
   {
-    float focal_length = 0.0f;
-    boost::shared_ptr<openni::VideoStream> stream = getColorVideoStream();
+    boost::shared_ptr<openni::VideoStream> stream = getIRVideoStream();
 
-    if (stream)
-    {
-      focal_length = (float)output_y_resolution / (2 * tan(stream->getVerticalFieldOfView() / 2));
-    }
+    if (output_x_resolution == 0)
+      output_x_resolution = stream->getVideoMode().getResolutionX();
 
-    return focal_length;
+    float scale = static_cast<float> (output_x_resolution) / static_cast<float> (XN_SXGA_X_RES);
+
+    if (isDepthRegistered())
+      return (rgb_focal_length_SXGA_ * scale);
+    else
+      return (depth_focal_length_SXGA_ * scale);
   }
 
-  float OpenNI2Device::getColorFocalLength(int output_y_resolution) const
+  float OpenNI2Device::getColorFocalLength(int output_x_resolution) const
   {
-    float focal_length = 0.0f;
     boost::shared_ptr<openni::VideoStream> stream = getColorVideoStream();
 
-    if (stream)
-    {
-      focal_length = (float)output_y_resolution / (2 * tan(stream->getVerticalFieldOfView() / 2));
-    }
+    if (output_x_resolution == 0)
+      output_x_resolution = stream->getVideoMode().getResolutionX();
 
-    return focal_length;
+    float scale = static_cast<float> (output_x_resolution) / static_cast<float> (XN_SXGA_X_RES);
+    return (rgb_focal_length_SXGA_ * scale);
   }
 
-  float OpenNI2Device::getDepthFocalLength(int output_y_resolution) const
+  float OpenNI2Device::getDepthFocalLength(int output_x_resolution) const
   {
-    float focal_length = 0.0f;
-    boost::shared_ptr<openni::VideoStream> stream = getColorVideoStream();
+    boost::shared_ptr<openni::VideoStream> stream = getDepthVideoStream();
 
-    if (stream)
-    {
-      focal_length = (float)output_y_resolution / (2 * tan(stream->getVerticalFieldOfView() / 2));
-    }
+    if (output_x_resolution == 0)
+      output_x_resolution = stream->getVideoMode().getResolutionX();
 
-    return focal_length;
+    float scale = static_cast<float> (output_x_resolution) / static_cast<float> (XN_SXGA_X_RES);
+
+    if (isDepthRegistered())
+      return (rgb_focal_length_SXGA_ * scale);
+    else
+      return (depth_focal_length_SXGA_ * scale);
   }
 
   bool OpenNI2Device::isIRVideoModeSupported(const OpenNI2VideoMode& video_mode) const
@@ -386,13 +390,12 @@ namespace openni2_wrapper
     return openni_device_->isImageRegistrationModeSupported(openni::IMAGE_REGISTRATION_DEPTH_TO_COLOR);
   }
 
-  void OpenNI2Device::setImageRegistrationMode(bool enabled) throw ()
+  void OpenNI2Device::setImageRegistrationMode(bool setEnable) throw ()
   {
     bool registrationSupported = isImageRegistrationModeSupported();
     if (registrationSupported)
     {
-      image_registration_activated_ = enabled;
-      if (enabled)
+      if (setEnable)
       {
         openni::Status rc = openni_device_->setImageRegistrationMode(openni::IMAGE_REGISTRATION_DEPTH_TO_COLOR);
         if (rc != openni::STATUS_OK)
@@ -404,7 +407,13 @@ namespace openni2_wrapper
         if (rc != openni::STATUS_OK)
           THROW_OPENNI_EXCEPTION("Enabling image registration mode failed: \n%s\n", openni::OpenNI::getExtendedError());
       }
+      image_registration_activated_ = setEnable;
     }
+  }
+
+  bool OpenNI2Device::isDepthRegistered() const throw ()
+  {
+    return openni_device_->getImageRegistrationMode() == openni::IMAGE_REGISTRATION_DEPTH_TO_COLOR;
   }
 
   void OpenNI2Device::setDepthColorSync(bool enabled) throw ()
