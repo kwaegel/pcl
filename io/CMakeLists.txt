@@ -58,7 +58,6 @@ if(build)
         set(OPENNI2_GRABBER_SOURCES
 			# New sources
 			src/openni2_camera/openni2_exception.cpp
-			src/openni2_camera/openni2_frame_listener.cpp
 			src/openni2_camera/openni2_timer_filter.cpp
 			src/openni2_camera/openni2_video_mode.cpp
 			src/openni2_camera/openni2_convert.cpp

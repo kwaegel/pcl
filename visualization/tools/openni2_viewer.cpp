@@ -133,7 +133,7 @@ public:
 	{
     using boost::posix_time::time_duration;
     time_duration delta = boost::posix_time::microsec_clock::local_time() - image->getSystemTimeStamp();
-    std::cout << "#" << image->getFrameID() << ": +" << delta.total_milliseconds() << ",\t viewer callback\n";
+    //std::cout << "#" << image->getFrameID() << ": +" << delta.total_milliseconds() << ",\t viewer callback\n";
 
 		FPS_CALC ("image callback");
 		boost::mutex::scoped_lock lock (image_mutex_);
@@ -182,7 +182,7 @@ public:
 	{
 		cloud_viewer_->registerMouseCallback (&OpenNI2Viewer::mouse_callback, *this);
 		cloud_viewer_->registerKeyboardCallback(&OpenNI2Viewer::keyboard_callback, *this);
-    cloud_viewer_->setCameraFieldOfView(pcl::deg2rad(50.0));
+    cloud_viewer_->setCameraFieldOfView(1.02259994f);
 		boost::function<void (const CloudConstPtr&) > cloud_cb = boost::bind (&OpenNI2Viewer::cloud_callback, this, _1);
 		boost::signals2::connection cloud_connection = grabber_.registerCallback (cloud_cb);
 
@@ -252,9 +252,9 @@ public:
 					image_init = !image_init;
 				}
 
-        using boost::posix_time::time_duration;
-        time_duration delta = boost::posix_time::microsec_clock::local_time() - image->getSystemTimeStamp();
-        std::cout << "#" << image->getFrameID() << ": +" << delta.total_milliseconds() << ",\t starting draw\n";
+        //using boost::posix_time::time_duration;
+        // delta = boost::posix_time::microsec_clock::local_time() - image->getSystemTimeStamp();
+        //std::cout << "#" << image->getFrameID() << ": +" << delta.total_milliseconds() << ",\t starting draw\n";
 
 				if (image->getEncoding() == openni_wrapper::Image::RGB)
 					image_viewer_->addRGBImage ( (const unsigned char*)image->getMetaData ().getData(), image->getWidth (), image->getHeight ());
@@ -262,9 +262,9 @@ public:
 					image_viewer_->addRGBImage (rgb_data_, image->getWidth (), image->getHeight ());
 				image_viewer_->spinOnce ();
 
-        using boost::posix_time::time_duration;
-        delta = boost::posix_time::microsec_clock::local_time() - image->getSystemTimeStamp();
-        std::cout << "#" << image->getFrameID() << ": +" << delta.total_milliseconds() << ",\t done draw\n";
+        //using boost::posix_time::time_duration;
+        //delta = boost::posix_time::microsec_clock::local_time() - image->getSystemTimeStamp();
+        //std::cout << "#" << image->getFrameID() << ": +" << delta.total_milliseconds() << ",\t done draw\n";
 			}
 
 		}

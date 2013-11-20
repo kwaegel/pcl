@@ -878,7 +878,7 @@ namespace openni2_wrapper
 
     using boost::posix_time::time_duration;
     time_duration delta = boost::posix_time::microsec_clock::local_time() - t_readFrameTimestamp;
-    std::cout << "#" << frame.getFrameIndex() << ": +" << delta.total_milliseconds() << ",\t processColorFrame called\n";
+    //std::cout << "#" << frame.getFrameIndex() << ": +" << delta.total_milliseconds() << ",\t processColorFrame called\n";
 
 
     openni::PixelFormat format = frame.getVideoMode().getPixelFormat();

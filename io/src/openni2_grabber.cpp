@@ -461,7 +461,7 @@ void
 {
     using boost::posix_time::time_duration;
     time_duration delta = boost::posix_time::microsec_clock::local_time() - image->getSystemTimeStamp();
-    std::cout << "#" << image->getFrameID() << ": +" << delta.total_milliseconds() << ",\t grabber image callback\n";
+    //std::cout << "#" << image->getFrameID() << ": +" << delta.total_milliseconds() << ",\t grabber image callback\n";
 
   if (num_slots<sig_cb_openni_point_cloud_rgb>   () > 0 ||
     num_slots<sig_cb_openni_point_cloud_rgba>  () > 0 ||
