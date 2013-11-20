@@ -172,6 +172,12 @@ namespace openni2_wrapper
   {
     boost::shared_ptr<openni::VideoStream> stream = getIRVideoStream();
 
+    int frameWidth = stream->getVideoMode().getResolutionX();
+    float hFov = stream->getHorizontalFieldOfView();
+    float calculatedFocalLengthX = frameWidth / (2.0f * tan(hFov / 2.0f));
+    return calculatedFocalLengthX;
+
+    /*
     if (output_x_resolution == 0)
       output_x_resolution = stream->getVideoMode().getResolutionX();
 
@@ -181,23 +187,43 @@ namespace openni2_wrapper
       return (rgb_focal_length_SXGA_ * scale);
     else
       return (depth_focal_length_SXGA_ * scale);
+    */
   }
 
   float OpenNI2Device::getColorFocalLength(int output_x_resolution) const
   {
     boost::shared_ptr<openni::VideoStream> stream = getColorVideoStream();
 
+    int frameWidth = stream->getVideoMode().getResolutionX();
+    float hFov = stream->getHorizontalFieldOfView();
+    float calculatedFocalLengthX = frameWidth / (2.0f * tan(hFov / 2.0f));
+    return calculatedFocalLengthX;
+
+    // Same result for vertical, with rounding errors.
+    //int frameHeight = stream->getVideoMode().getResolutionY();
+    //float vFov = stream->getVerticalFieldOfView();
+    //float calculatedFocalLengthY = frameHeight / (2.0f * tan(vFov / 2.0f));
+
+    /*
     if (output_x_resolution == 0)
       output_x_resolution = stream->getVideoMode().getResolutionX();
 
     float scale = static_cast<float> (output_x_resolution) / static_cast<float> (XN_SXGA_X_RES);
-    return (rgb_focal_length_SXGA_ * scale);
+    float scaledFocalLength = rgb_focal_length_SXGA_ * scale;
+    return scaledFocalLength;
+    */
   }
 
   float OpenNI2Device::getDepthFocalLength(int output_x_resolution) const
   {
     boost::shared_ptr<openni::VideoStream> stream = getDepthVideoStream();
 
+    int frameWidth = stream->getVideoMode().getResolutionX();
+    float hFov = stream->getHorizontalFieldOfView();
+    float calculatedFocalLengthX = frameWidth / (2.0f * tan(hFov / 2.0f));
+    return calculatedFocalLengthX;
+    
+    /*
     if (output_x_resolution == 0)
       output_x_resolution = stream->getVideoMode().getResolutionX();
 
@@ -207,6 +233,7 @@ namespace openni2_wrapper
       return (rgb_focal_length_SXGA_ * scale);
     else
       return (depth_focal_length_SXGA_ * scale);
+      */
   }
 
   bool OpenNI2Device::isIRVideoModeSupported(const OpenNI2VideoMode& video_mode) const
@@ -844,10 +871,10 @@ namespace openni2_wrapper
   // Convert VideoFrameRef into pcl::Image and forward to registered callbacks
   void OpenNI2Device::processColorFrame(openni::VideoStream& stream)
   {
+    boost::posix_time::ptime t_readFrameTimestamp = boost::posix_time::microsec_clock::local_time();
+
     openni::VideoFrameRef frame;
     stream.readFrame(&frame);
-
-    boost::posix_time::ptime t_readFrameTimestamp = boost::posix_time::microsec_clock::local_time();
 
     using boost::posix_time::time_duration;
     time_duration delta = boost::posix_time::microsec_clock::local_time() - t_readFrameTimestamp;
