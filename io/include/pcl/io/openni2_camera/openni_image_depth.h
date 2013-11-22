@@ -47,6 +47,7 @@
 #include <pcl/pcl_exports.h>
 #include "openni_exception.h"
 #include <pcl/io/boost.h>
+#include <boost/chrono.hpp>
 
 namespace openni_wrapper
 {
@@ -58,6 +59,7 @@ namespace openni_wrapper
     public:
       typedef boost::shared_ptr<DepthImage> Ptr;
       typedef boost::shared_ptr<const DepthImage> ConstPtr;
+      typedef boost::chrono::high_resolution_clock::time_point Timestamp;
 
       /** \brief Constructor
         * \param[in] depth_meta_data the actual data from the OpenNI library
@@ -68,7 +70,8 @@ namespace openni_wrapper
         * \param[in] no_sample_value defines which values in the depth data are indicating that no depth (disparity) could be determined .
         * \attention The focal length may change, depending whether the depth stream is registered/mapped to the RGB stream or not.
         */
-      inline DepthImage (openni::VideoFrameRef depth_meta_data, float baseline, float focal_length, uint64_t shadow_value, uint64_t no_sample_value) throw ();
+      DepthImage (openni::VideoFrameRef depth_meta_data, float baseline, float focal_length, uint64_t shadow_value, uint64_t no_sample_value) throw ();
+      DepthImage (openni::VideoFrameRef depth_meta_data, float baseline, float focal_length, uint64_t shadow_value, uint64_t no_sample_value, Timestamp t_frameNotificationTime) throw ();
 
       /** \brief Destructor. Never throws an exception. */
       inline virtual ~DepthImage () throw ();
@@ -154,6 +157,9 @@ namespace openni_wrapper
       inline unsigned long 
       getTimeStamp () const throw ();
 
+      Timestamp
+      getSystemTimestamp () const throw ();
+
 	  // Get a const pointer to the raw depth buffer
 	  inline const OniDepthPixel*
 	  getData() { return (OniDepthPixel*) depth_md_.getData(); }
@@ -168,6 +174,7 @@ namespace openni_wrapper
       float focal_length_;
       uint64_t shadow_value_;
       uint64_t no_sample_value_;
+      Timestamp timestamp_;
   } ;
 } // namespace
 #endif

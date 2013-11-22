@@ -43,6 +43,7 @@
 #include "openni.h"
 #include "openni_exception.h"
 #include <pcl/io/boost.h>
+#include <boost/chrono.hpp>
 
 namespace openni_wrapper
 {
@@ -60,7 +61,7 @@ namespace openni_wrapper
   public:
     typedef boost::shared_ptr<Image> Ptr;
     typedef boost::shared_ptr<const Image> ConstPtr;
-    typedef boost::posix_time::ptime Timestamp;
+    typedef boost::chrono::high_resolution_clock::time_point Timestamp;
 
     typedef enum
     {
@@ -82,7 +83,7 @@ namespace openni_wrapper
   * @param[in] image_meta_data the actual image data from the OpenNI driver
   * @param[in] t_readFrameTimestamp system timestamp from when the frame data is read from the device
   */
-  inline Image (openni::VideoFrameRef image_meta_data, Timestamp t_readFrameTimestamp) throw ();
+  inline Image (openni::VideoFrameRef image_meta_data, Timestamp timestamp) throw ();
 
     /**
      * @author Suat Gedikli
@@ -167,7 +168,7 @@ namespace openni_wrapper
      */
     inline unsigned long getTimeStamp () const throw ();
 
-    inline Timestamp getSystemTimeStamp() const throw();
+    inline Timestamp getSystemTimestamp() const throw();
 
     /**
      * @author Suat Gedikli
@@ -184,16 +185,17 @@ namespace openni_wrapper
   protected:
     openni::VideoFrameRef image_md_;		// This is already a reference, so we don't need another pointer wrapper.
 
-    Timestamp t_readFrameTimestamp;
+    Timestamp timestamp_;
   } ;
 
   Image::Image (openni::VideoFrameRef image_meta_data) throw ()
   : image_md_ (image_meta_data)
   {
+    timestamp_ = boost::chrono::high_resolution_clock::now();
   }
 
-    Image::Image (openni::VideoFrameRef image_meta_data, Timestamp t_readFrameTimestamp) throw ()
-  : image_md_ (image_meta_data), t_readFrameTimestamp(t_readFrameTimestamp)
+  Image::Image (openni::VideoFrameRef image_meta_data, Timestamp timestamp) throw ()
+  : image_md_ (image_meta_data), timestamp_(timestamp)
   {
   }
 
@@ -235,9 +237,9 @@ namespace openni_wrapper
     return static_cast<unsigned long> ( image_md_.getTimestamp() );
   }
 
-  Image::Timestamp Image::getSystemTimeStamp() const throw()
+  Image::Timestamp Image::getSystemTimestamp() const throw()
   {
-    return t_readFrameTimestamp;
+    return timestamp_;
   }
 
   const openni::VideoFrameRef&

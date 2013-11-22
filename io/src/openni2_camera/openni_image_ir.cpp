@@ -50,7 +50,13 @@ using openni_wrapper::IRImage;
   IRImage::IRImage (openni::VideoFrameRef ir_meta_data) throw ()
   : ir_md_ (ir_meta_data)
   {
+    timestamp_ = boost::chrono::high_resolution_clock::now();
   }
+
+  IRImage::IRImage (openni::VideoFrameRef ir_meta_data, IRImage::Timestamp timestamp) throw ()
+  : ir_md_ (ir_meta_data),
+  timestamp_(timestamp)
+  { }
 
   IRImage::~IRImage () throw ()
   {
@@ -74,6 +80,11 @@ using openni_wrapper::IRImage;
   unsigned long IRImage::getTimeStamp () const throw ()
   {
 	  return static_cast<unsigned long> (ir_md_.getTimestamp ());
+  }
+
+  IRImage::Timestamp IRImage::getSystemTimestamp () const throw ()
+  {
+	  return timestamp_;
   }
 
   const openni::VideoFrameRef& IRImage::getMetaData () const throw ()

@@ -41,6 +41,8 @@
 #include "openni_image.h"
 #include <pcl/pcl_macros.h>
 
+#include <boost/chrono.hpp>
+
 namespace openni_wrapper
 {
 
@@ -55,7 +57,7 @@ namespace openni_wrapper
   public:
 
     ImageRGB24 (openni::VideoFrameRef image_meta_data) throw ();
-    ImageRGB24 (openni::VideoFrameRef image_meta_data, Timestamp t_readFrameTimestamp) throw ();
+    ImageRGB24 (openni::VideoFrameRef image_meta_data, Timestamp timestamp) throw ();
     virtual ~ImageRGB24 () throw ();
 
     inline virtual Encoding

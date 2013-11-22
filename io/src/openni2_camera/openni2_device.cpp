@@ -31,8 +31,11 @@
 
 #include "OpenNI.h"
 
+#include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/chrono.hpp>
 
 #include "pcl/io/openni2_camera/openni2_device.h"
 #include "pcl/io/openni2_camera/openni2_exception.h"
@@ -41,15 +44,14 @@
 
 #include "pcl/io/openni2_camera/openni_image_yuv_422.h"
 
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
-
 #include <string>
 
 namespace openni2_wrapper
 {
   using openni::VideoMode;
   using std::vector;
+
+  typedef boost::chrono::high_resolution_clock hr_clock;
 
   OpenNI2Device::OpenNI2Device(const std::string& device_URI) throw () :
     openni_device_(),
@@ -871,24 +873,19 @@ namespace openni2_wrapper
   // Convert VideoFrameRef into pcl::Image and forward to registered callbacks
   void OpenNI2Device::processColorFrame(openni::VideoStream& stream)
   {
-    boost::posix_time::ptime t_readFrameTimestamp = boost::posix_time::microsec_clock::local_time();
+    hr_clock::time_point t_callback = hr_clock::now();
 
     openni::VideoFrameRef frame;
     stream.readFrame(&frame);
-
-    using boost::posix_time::time_duration;
-    time_duration delta = boost::posix_time::microsec_clock::local_time() - t_readFrameTimestamp;
-    //std::cout << "#" << frame.getFrameIndex() << ": +" << delta.total_milliseconds() << ",\t processColorFrame called\n";
-
 
     openni::PixelFormat format = frame.getVideoMode().getPixelFormat();
     boost::shared_ptr<openni_wrapper::Image> image;
 
     // Convert frame to PCL image type, based on pixel format
     if (format == openni::PIXEL_FORMAT_YUV422)
-      image = boost::make_shared<openni_wrapper::ImageYUV422> (frame);
+      image = boost::make_shared<openni_wrapper::ImageYUV422> (frame, t_callback);
     else //if (format == PixelFormat::PIXEL_FORMAT_RGB888)
-      image = boost::make_shared<openni_wrapper::ImageRGB24> (frame, t_readFrameTimestamp);
+      image = boost::make_shared<openni_wrapper::ImageRGB24> (frame, t_callback);
 
     // Notify listeners of new frame
     for (std::map< OpenNIDevice::CallbackHandle, ActualImageCallbackFunction >::iterator callbackIt = image_callback_.begin (); callbackIt != image_callback_.end (); ++callbackIt)

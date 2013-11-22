@@ -9,8 +9,8 @@ using openni_wrapper::ImageRGB24;
   : Image (image_meta_data)
 { }
 
-ImageRGB24::ImageRGB24 (openni::VideoFrameRef image_meta_data, Timestamp t_readFrameTimestamp) throw ()
-  : Image (image_meta_data, t_readFrameTimestamp)
+ImageRGB24::ImageRGB24 (openni::VideoFrameRef image_meta_data, Timestamp timestamp) throw ()
+  : Image (image_meta_data, timestamp)
 { }
 
 ImageRGB24::~ImageRGB24 () throw ()

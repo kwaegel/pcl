@@ -53,9 +53,11 @@ class PCL_EXPORTS IRImage
 public:
   typedef boost::shared_ptr<IRImage> Ptr;
   typedef boost::shared_ptr<const IRImage> ConstPtr;
+  typedef boost::chrono::high_resolution_clock::time_point Timestamp;
 
-  inline IRImage (openni::VideoFrameRef ir_meta_data) throw ();
-  inline virtual ~IRImage () throw ();
+  IRImage (openni::VideoFrameRef ir_meta_data) throw ();
+  IRImage (openni::VideoFrameRef image_meta_data, Timestamp t_frameNotificationTime) throw ();
+  virtual ~IRImage () throw ();
 
   void fillRaw (unsigned width, unsigned height, unsigned short* ir_buffer, unsigned line_step = 0) const;
 
@@ -63,10 +65,12 @@ public:
   inline unsigned getHeight () const throw ();
   inline unsigned getFrameID () const throw ();
   inline unsigned long getTimeStamp () const throw ();
+  Timestamp getSystemTimestamp() const throw();
   inline const openni::VideoFrameRef& getMetaData () const throw ();
 
 protected:
   openni::VideoFrameRef ir_md_;
+  Timestamp timestamp_;
 };
 } // namespace
 #endif //__OPENNI_IR_IMAGE__

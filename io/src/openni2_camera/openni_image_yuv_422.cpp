@@ -52,6 +52,11 @@ ImageYUV422::ImageYUV422 (openni::VideoFrameRef image_meta_data) throw ()
 {
 }
 
+ImageYUV422::ImageYUV422 (openni::VideoFrameRef image_meta_data, Timestamp timestamp) throw ()
+  : Image (image_meta_data, timestamp)
+{
+}
+
 ImageYUV422::~ImageYUV422 () throw ()
 {
 }

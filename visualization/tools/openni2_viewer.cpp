@@ -46,7 +46,11 @@
 #include <pcl/console/parse.h>
 #include <pcl/console/time.h>
 
+#include <boost/chrono.hpp>
+
 #include "pcl/io/openni2_camera/openni.h"
+
+typedef boost::chrono::high_resolution_clock HRClock;
 
 #define SHOW_FPS 1
 #if SHOW_FPS
@@ -131,10 +135,6 @@ public:
 	void
 	image_callback (const boost::shared_ptr<openni_wrapper::Image>& image)
 	{
-    using boost::posix_time::time_duration;
-    time_duration delta = boost::posix_time::microsec_clock::local_time() - image->getSystemTimeStamp();
-    //std::cout << "#" << image->getFrameID() << ": +" << delta.total_milliseconds() << ",\t viewer callback\n";
-
 		FPS_CALC ("image callback");
 		boost::mutex::scoped_lock lock (image_mutex_);
 		image_ = image;
@@ -233,7 +233,7 @@ public:
 						0,0,0,		// Position
 						0,0,1,		// Viewpoint
 						0,-1,0);	// Up
-				}          
+				}  
 			}
 
 			// See if we can get an image
@@ -242,6 +242,7 @@ public:
 				image_.swap (image);
 				image_mutex_.unlock ();
 			}
+
 
 			if (image)
 			{
@@ -252,21 +253,13 @@ public:
 					image_init = !image_init;
 				}
 
-        //using boost::posix_time::time_duration;
-        // delta = boost::posix_time::microsec_clock::local_time() - image->getSystemTimeStamp();
-        //std::cout << "#" << image->getFrameID() << ": +" << delta.total_milliseconds() << ",\t starting draw\n";
-
 				if (image->getEncoding() == openni_wrapper::Image::RGB)
 					image_viewer_->addRGBImage ( (const unsigned char*)image->getMetaData ().getData(), image->getWidth (), image->getHeight ());
 				else
 					image_viewer_->addRGBImage (rgb_data_, image->getWidth (), image->getHeight ());
 				image_viewer_->spinOnce ();
 
-        //using boost::posix_time::time_duration;
-        //delta = boost::posix_time::microsec_clock::local_time() - image->getSystemTimeStamp();
-        //std::cout << "#" << image->getFrameID() << ": +" << delta.total_milliseconds() << ",\t done draw\n";
 			}
-
 		}
 
 		grabber_.stop ();

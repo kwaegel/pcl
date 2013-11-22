@@ -51,6 +51,17 @@ DepthImage::DepthImage (openni::VideoFrameRef depth_meta_data, float baseline, f
 , baseline_ (baseline)
 , focal_length_ (focal_length)
 , shadow_value_ (shadow_value)
+, no_sample_value_ (no_sample_value)
+{
+  timestamp_ = boost::chrono::high_resolution_clock::now();
+}
+
+DepthImage::DepthImage (openni::VideoFrameRef depth_meta_data, float baseline, float focal_length, uint64_t shadow_value, uint64_t no_sample_value, DepthImage::Timestamp timestamp) throw ()
+: depth_md_(depth_meta_data)
+, timestamp_(timestamp)
+, baseline_ (baseline)
+, focal_length_ (focal_length)
+, shadow_value_ (shadow_value)
 , no_sample_value_ (no_sample_value) { }
 
 DepthImage::~DepthImage () throw () { }
@@ -107,6 +118,12 @@ unsigned long
 DepthImage::getTimeStamp () const throw ()
 {
   return static_cast<unsigned long> (depth_md_.getTimestamp ());
+}
+
+DepthImage::Timestamp
+DepthImage::getSystemTimestamp () const throw ()
+{
+  return timestamp_;
 }
 
 // Fill external buffers ////////////////////////////////////////////////////
