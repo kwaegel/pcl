@@ -49,6 +49,7 @@
 namespace openni2_wrapper
 {
   using openni::VideoMode;
+  using std::vector;
 
   OpenNI2Device::OpenNI2Device(const std::string& device_URI) throw () :
     openni_device_(),
@@ -505,8 +506,8 @@ namespace openni2_wrapper
   OpenNI2VideoMode OpenNI2Device::getDefaultIRMode() const
   {
     // Search for and return VGA@30 Hz mode
-    auto modeList = getSupportedIRVideoModes();
-    for (auto modeItr = begin(modeList); modeItr != end(modeList); modeItr++)
+    vector<OpenNI2VideoMode> modeList = getSupportedIRVideoModes();
+    for (vector<OpenNI2VideoMode>::iterator modeItr = modeList.begin(); modeItr != modeList.end(); modeItr++)
     {
       OpenNI2VideoMode mode = *modeItr;
       if ( (mode.x_resolution_ == 640) && (mode.y_resolution_ == 480) && (mode.frame_rate_ = 30.0) )
@@ -517,8 +518,8 @@ namespace openni2_wrapper
   OpenNI2VideoMode OpenNI2Device::getDefaultColorMode() const
   {
     // Search for and return VGA@30 Hz mode
-    auto modeList = getSupportedColorVideoModes();
-    for (auto modeItr = begin(modeList); modeItr != end(modeList); modeItr++)
+    vector<OpenNI2VideoMode> modeList = getSupportedColorVideoModes();
+    for (vector<OpenNI2VideoMode>::iterator modeItr = modeList.begin(); modeItr != modeList.end(); modeItr++)
     {
       OpenNI2VideoMode mode = *modeItr;
       if ( (mode.x_resolution_ == 640) && (mode.y_resolution_ == 480) && (mode.frame_rate_ = 30.0) )
@@ -529,8 +530,8 @@ namespace openni2_wrapper
   OpenNI2VideoMode OpenNI2Device::getDefaultDepthMode() const
   {
     // Search for and return VGA@30 Hz mode
-    auto modeList = getSupportedDepthVideoModes();
-    for (auto modeItr = begin(modeList); modeItr != end(modeList); modeItr++)
+    vector<OpenNI2VideoMode> modeList = getSupportedDepthVideoModes();
+    for (vector<OpenNI2VideoMode>::iterator modeItr = modeList.begin(); modeItr != modeList.end(); modeItr++)
     {
       OpenNI2VideoMode mode = *modeItr;
       if ( (mode.x_resolution_ == 640) && (mode.y_resolution_ == 480) && (mode.frame_rate_ = 30.0) )
