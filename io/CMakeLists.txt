@@ -75,6 +75,9 @@ if(build)
             
             src/openni2_grabber.cpp
             )
+			
+			source_group("OpenNI 2\\Header Files" FILES ${OPENNI2_GRABBER_INCLUDES} ${OPENNI2_INCLUDES})
+			source_group("OpenNI 2\\Source Files" FILES ${OPENNI2_GRABBER_SOURCES})
 		
 		# Copy OpenNI2 redist directory to bin. Only tested on Windows.
 		if(MSVC)
@@ -128,6 +131,10 @@ if(build)
             src/openni_grabber.cpp
             src/oni_grabber.cpp
             )
+			
+			source_group("OpenNI\\Header Files" FILES ${OPENNI_GRABBER_INCLUDES} ${OPENNI_INCLUDES})
+			source_group("OpenNI\\Source Files" FILES ${OPENNI_GRABBER_SOURCES})
+			
     endif(OPENNI_FOUND)
 
     if(FZAPI_FOUND)
