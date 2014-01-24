@@ -108,6 +108,19 @@ if(CMAKE_COMPILER_IS_GNUCXX)
       add_definitions("-DBOOST_LIB_DIAGNOSTIC -DBOOST_THREAD_USE_LIB")
     endif(PCL_SHARED_LIBS)
   endif()
+  
+  # Enable C++11 support for GCC >= 4.7, or draft support for GCC >= 4.3
+  # http://stackoverflow.com/questions/10984442/how-to-detect-c11-support-of-a-compiler-with-cmake
+  execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
+  if (GCC_VERSION VERSION_LESS 4.3)
+    message(AUTHOR_WARNING "C++11 support not found. Upgrade to GCC 4.3 or higher (GCC 4.7 or higher prefered).") 
+  elseif (GCC_VERSION VERSION_LESS 4.7)
+    message(AUTHOR_WARNING "C++0x draft standand activated. If you get any errors update to GCC 4.7 or higher.")
+    add_definitions("-std=gnu++0x")
+  else ()
+    message(STATUS "C++11 activated.")
+    add_definitions("-std=c++11;")
+  endif();
 endif()
 
 if(MSVC)
