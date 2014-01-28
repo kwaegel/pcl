@@ -120,7 +120,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
   else ()
     message(STATUS "C++11 activated.")
     add_definitions("-std=c++11;")
-  endif();
+  endif()
 endif()
 
 if(MSVC)
