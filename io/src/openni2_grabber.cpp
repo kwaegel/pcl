@@ -518,8 +518,8 @@ void
 
   if (image_depth_image_signal_->num_slots () > 0)
   {
-    float constant = 1.0f / device_->getDepthFocalLength (depth_width_);
-    image_depth_image_signal_->operator()(image, depth_image, constant);
+    float reciprocalFocalLength = 1.0f / device_->getDepthFocalLength (depth_width_);
+    image_depth_image_signal_->operator()(image, depth_image, reciprocalFocalLength);
   }
 }
 
@@ -534,8 +534,8 @@ void
 
   if (ir_depth_image_signal_->num_slots () > 0)
   {
-    float constant = 1.0f / device_->getDepthFocalLength (depth_width_);
-    ir_depth_image_signal_->operator()(ir_image, depth_image, constant);
+    float reciprocalFocalLength = 1.0f / device_->getDepthFocalLength (depth_width_);
+    ir_depth_image_signal_->operator()(ir_image, depth_image, reciprocalFocalLength);
   }
 }
 
