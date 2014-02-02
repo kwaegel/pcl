@@ -46,10 +46,11 @@
 #include <pcl/io/boost.h>
 #include <pcl/io/grabber.h>
 #include <pcl/io/openni2_camera/openni2_device_manager.h>
-#include <pcl/io/openni2_camera/openni2_device.h>
 #include <pcl/io/openni2_camera/openni_image.h>
 #include <pcl/io/openni2_camera/openni_image_depth.h>
 #include <pcl/io/openni2_camera/openni_image_ir.h>
+#include <pcl/io/openni2_camera/openni2_frame_listener.h>
+#include <pcl/io/openni2_camera/openni2_video_mode.h>
 #include <string>
 #include <deque>
 #include <pcl/common/synchronizer.h>
@@ -72,9 +73,10 @@ namespace pcl
     typedef boost::shared_ptr<OpenNIGrabber> Ptr;
     typedef boost::shared_ptr<const OpenNIGrabber> ConstPtr;
 
+    // Predefined modes. Not all will be available for every device.
     typedef enum
     {
-      OpenNI_Default_Mode = 0, // This can depend on the device. For now all devices (PSDK, Xtion, Kinect) its VGA@30Hz
+      OpenNI_Default_Mode = 2, // This can depend on the device. For now all devices (PSDK, Xtion, Kinect) its VGA@30Hz
       OpenNI_SXGA_15Hz = 1,    // Only supported by the Kinect
       OpenNI_VGA_30Hz = 2,     // Supported by PSDK, Xtion and Kinect
       OpenNI_VGA_25Hz = 3,     // Supportged by PSDK and Xtion
@@ -122,6 +124,7 @@ namespace pcl
     virtual bool
       isRunning () const;
 
+    /** \brief Get the grabber name. */
     virtual std::string
       getName () const;
 
@@ -129,8 +132,10 @@ namespace pcl
     virtual float 
       getFramesPerSecond () const;
 
-    /** \brief Get a boost shared pointer to the \ref OpenNIDevice object. */
-    inline boost::shared_ptr<openni2_wrapper::OpenNIDevice>
+    /** \brief Get a boost shared pointer to the \ref OpenNIDevice object. 
+    * This breaks encapsulation.
+    */
+    inline boost::shared_ptr<openni::Device>
       getDevice () const;
 
     /** \brief Obtain a list of the available depth modes that this device supports. */
@@ -296,7 +301,7 @@ namespace pcl
     * \param[out] depth_data_ptr generated depth data
     * \param[in] size of shift and depth buffer
     */
-    /* TODO: reenable this
+    /* TODO: reenable this if still relavent for OpenNI 2
     inline void
     convertShiftToDepth (
     const uint16_t* shift_data_ptr,
@@ -347,7 +352,7 @@ namespace pcl
     // TODO: rename to mapMode2OniMode
     /** \brief Map config modes. */
     bool
-      mapMode2XnMode (int mode, openni2_wrapper::OpenNI2VideoMode& videoMode) const;
+      mapMode2XnMode (Mode mode, openni2_wrapper::OpenNI2VideoMode& videoMode) const;
 
     // callback methods
     /** \brief RGB image callback. */
@@ -361,6 +366,11 @@ namespace pcl
     /** \brief IR image callback. */
     virtual void
       irCallback (boost::shared_ptr<openni_wrapper::IRImage> ir_image, void* cookie);
+
+
+    virtual void processColorFrame(openni::VideoStream& stream);
+    virtual void processDepthFrame(openni::VideoStream& stream);
+    virtual void processIRFrame(openni::VideoStream& stream);
 
     /** \brief RGB + Depth image callback. */
     virtual void
@@ -422,7 +432,18 @@ namespace pcl
     Synchronizer<boost::shared_ptr<openni_wrapper::IRImage>, boost::shared_ptr<openni_wrapper::DepthImage> > ir_sync_;
 
     /** \brief The actual openni device. */
-    boost::shared_ptr<openni2_wrapper::OpenNIDevice> device_;
+    boost::shared_ptr<openni::Device> device_;
+
+    boost::shared_ptr<openni::VideoStream> ir_video_stream_;
+    boost::shared_ptr<openni::VideoStream> color_video_stream_;
+    boost::shared_ptr<openni::VideoStream> depth_video_stream_;
+
+    boost::shared_ptr<openni2_wrapper::OpenNI2FrameListener> ir_frame_listener_;
+    boost::shared_ptr<openni2_wrapper::OpenNI2FrameListener> color_frame_listener_;
+    boost::shared_ptr<openni2_wrapper::OpenNI2FrameListener> depth_frame_listener_;
+
+    float getStreamFocalLength(boost::shared_ptr<openni::VideoStream> stream) const;
+
 
     std::string rgb_frame_id_;
     std::string depth_frame_id_;
@@ -466,11 +487,11 @@ namespace pcl
       }
     } ;
     // Mapping from config (enum) modes to native OpenNI modes
-    std::map<int, openni2_wrapper::OpenNI2VideoMode> config2oni_map_;
+    std::map<Mode, openni2_wrapper::OpenNI2VideoMode> config2oni_map_;
 
-    openni2_wrapper::OpenNI2Device::CallbackHandle depth_callback_handle;
-    openni2_wrapper::OpenNI2Device::CallbackHandle image_callback_handle;
-    openni2_wrapper::OpenNI2Device::CallbackHandle ir_callback_handle;
+    //openni2_wrapper::OpenNI2Device::CallbackHandle depth_callback_handle;
+    //openni2_wrapper::OpenNI2Device::CallbackHandle image_callback_handle;
+    //openni2_wrapper::OpenNI2Device::CallbackHandle ir_callback_handle;
     bool running_;
 
     /** \brief The RGB image focal length (fx). */
@@ -494,7 +515,7 @@ namespace pcl
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
-  boost::shared_ptr<openni2_wrapper::OpenNIDevice>
+  boost::shared_ptr<openni::Device>
     OpenNIGrabber::getDevice () const
   {
     return device_;

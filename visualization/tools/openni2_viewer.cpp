@@ -308,19 +308,24 @@ main (int argc, char** argv)
 		{
 			if (argc >= 3)
 			{
+        // Create grabber using arguments
 				pcl::OpenNIGrabber grabber(argv[2]);
-				boost::shared_ptr<openni2_wrapper::OpenNIDevice> device = grabber.getDevice();
-				cout << *device;		// Prints out all sensor data, including supported video modes
+        cout << grabber.getName() << endl;
+
+        // Need a way to print out all sensor data. Overload operator<< for grabber?
+        // auto device = grabber.getDevice();
+				// cout << *device;		// Prints out all sensor data, including supported video modes
 			}
 			else
 			{
-				boost::shared_ptr<openni2_wrapper::OpenNI2DeviceManager> deviceManager = openni2_wrapper::OpenNI2DeviceManager::getInstance();
+        // List all connected devices
+				auto deviceManager = openni2_wrapper::OpenNI2DeviceManager::getInstance();
 				if (deviceManager->getNumOfConnectedDevices() > 0)
 				{
 					for (unsigned deviceIdx = 0; deviceIdx < deviceManager->getNumOfConnectedDevices(); ++deviceIdx)
 					{
-						boost::shared_ptr<openni2_wrapper::OpenNI2Device> device = deviceManager->getDeviceByIndex(deviceIdx);
-						cout << "Device " << device->getStringID() << "connected." << endl;
+						auto device = deviceManager->getDeviceByIndex(deviceIdx);
+            cout << "Device " << device->getDeviceInfo().getName() << "connected." << endl;
 					}
 
 				}
@@ -334,11 +339,12 @@ main (int argc, char** argv)
 	}
 	else
 	{
-		boost::shared_ptr<openni2_wrapper::OpenNI2DeviceManager> deviceManager = openni2_wrapper::OpenNI2DeviceManager::getInstance();
+    // Show default device info
+		auto deviceManager = openni2_wrapper::OpenNI2DeviceManager::getInstance();
 		if (deviceManager->getNumOfConnectedDevices() > 0)
 		{
-			boost::shared_ptr<openni2_wrapper::OpenNI2Device> device = deviceManager->getAnyDevice();
-			cout << "Device ID not set, using default device: " << device->getStringID() << endl;
+			auto device = deviceManager->getAnyDevice();
+      cout << "Device ID not set, using default device: " << device->getDeviceInfo().getName() << endl;
 		}
 	}
 

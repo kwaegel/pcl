@@ -150,7 +150,7 @@ namespace openni2_wrapper
     void setAutoExposure(bool enable) throw ();
     void setAutoWhiteBalance(bool enable) throw ();
 
-    bool isSynchronized() { return false; };
+    bool isSynchronized() { return openni_device_->getDepthColorSyncEnabled(); }
     bool isSynchronizationSupported(){ return false; }
     void setSynchronization(bool sync) { setDepthColorSync(true); }
 

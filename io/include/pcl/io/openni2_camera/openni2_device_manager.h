@@ -43,11 +43,15 @@
 #include <string>
 #include <ostream>
 
+namespace openni
+{
+  class Device;
+}
+
 namespace openni2_wrapper
 {
 
   class OpenNI2DeviceListener;
-  class OpenNI2Device;
 
   class PCL_EXPORTS OpenNI2DeviceManager
   {
@@ -59,27 +63,20 @@ namespace openni2_wrapper
     // Based on http://stackoverflow.com/a/13431981/1789618
     static boost::shared_ptr<OpenNI2DeviceManager> getInstance()
     {
-      /*if (singelton_.get()==0)
-      singelton_ = boost::make_shared<OpenNI2DeviceManager>();
-      return singelton_;*/
-
       static boost::shared_ptr<OpenNI2DeviceManager> instance = boost::make_shared<OpenNI2DeviceManager>();
       return instance;
     }
 
-    boost::shared_ptr<std::vector<OpenNI2DeviceInfo> > getConnectedDeviceInfos() const;
+    boost::shared_ptr<std::vector<openni2_wrapper::OpenNI2DeviceInfo> > getConnectedDeviceInfos() const;
     boost::shared_ptr<std::vector<std::string> > getConnectedDeviceURIs() const;
     std::size_t getNumOfConnectedDevices() const;
 
-    boost::shared_ptr<OpenNI2Device> getAnyDevice();
-    boost::shared_ptr<OpenNI2Device> getDevice(const std::string& device_URI);
-    boost::shared_ptr<OpenNI2Device> getDeviceByIndex(int index);
-    boost::shared_ptr<OpenNI2Device> getFileDevice(const std::string& path);
+    boost::shared_ptr<openni::Device> getAnyDevice();
+    boost::shared_ptr<openni::Device> getDevice(const std::string& pathOrURI);
+    boost::shared_ptr<openni::Device> getDeviceByIndex(int index);
 
   protected:
     boost::shared_ptr<OpenNI2DeviceListener> device_listener_;
-
-    //PCL_EXPORTS static boost::shared_ptr<OpenNI2DeviceManager> singelton_;
   };
 
 

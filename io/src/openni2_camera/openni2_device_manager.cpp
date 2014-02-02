@@ -31,7 +31,6 @@
 
 #include "pcl/io/openni2_camera/openni2_device_manager.h"
 #include "pcl/io/openni2_camera/openni2_convert.h"
-#include "pcl/io/openni2_camera/openni2_device.h"
 #include "pcl/io/openni2_camera/openni2_exception.h"
 
 #include <boost/make_shared.hpp>
@@ -40,6 +39,8 @@
 #include <string>
 
 #include "OpenNI.h"
+
+using openni::Device;
 
 namespace openni2_wrapper
 {
@@ -208,22 +209,27 @@ namespace openni2_wrapper
     return device_listener_->getNumOfConnectedDevices();
   }
 
-  boost::shared_ptr<OpenNI2Device> OpenNI2DeviceManager::getAnyDevice()
+  boost::shared_ptr<Device> OpenNI2DeviceManager::getAnyDevice()
   {
-    return boost::make_shared<OpenNI2Device>("");
+    boost::shared_ptr<Device> devPtr = boost::make_shared<Device>();
+    devPtr->open(openni::ANY_DEVICE);
+    return devPtr;
   }
-  boost::shared_ptr<OpenNI2Device> OpenNI2DeviceManager::getDevice(const std::string& device_URI)
+
+  boost::shared_ptr<Device> OpenNI2DeviceManager::getDevice(const std::string& pathOrURI)
   {
-    return boost::make_shared<OpenNI2Device>(device_URI);
+    boost::shared_ptr<Device> devPtr = boost::make_shared<Device>();
+    devPtr->open(pathOrURI.c_str());
+    return devPtr;
   }
-  boost::shared_ptr<OpenNI2Device> OpenNI2DeviceManager::getDeviceByIndex(int index)
+
+  boost::shared_ptr<Device> OpenNI2DeviceManager::getDeviceByIndex(int index)
   {
     boost::shared_ptr<std::vector<std::string> > URIs = getConnectedDeviceURIs();
-    return boost::make_shared<OpenNI2Device>( URIs->at(index) );
-  }
-  boost::shared_ptr<OpenNI2Device> OpenNI2DeviceManager::getFileDevice(const std::string& path)
-  {
-    return boost::make_shared<OpenNI2Device>(path);
+    
+    boost::shared_ptr<Device> devPtr = boost::make_shared<Device>();
+    devPtr->open(URIs->at(index).c_str() );
+    return devPtr;
   }
 
   std::ostream& operator << (std::ostream& stream, const OpenNI2DeviceManager& device_manager) 

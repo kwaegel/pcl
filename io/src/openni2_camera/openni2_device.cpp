@@ -198,22 +198,7 @@ namespace openni2_wrapper
 
     int frameWidth = stream->getVideoMode().getResolutionX();
     float hFov = stream->getHorizontalFieldOfView();
-    float calculatedFocalLengthX = frameWidth / (2.0f * tan(hFov / 2.0f));
-    return calculatedFocalLengthX;
-
-    // Same result for vertical, with rounding errors.
-    //int frameHeight = stream->getVideoMode().getResolutionY();
-    //float vFov = stream->getVerticalFieldOfView();
-    //float calculatedFocalLengthY = frameHeight / (2.0f * tan(vFov / 2.0f));
-
-    /*
-    if (output_x_resolution == 0)
-      output_x_resolution = stream->getVideoMode().getResolutionX();
-
-    float scale = static_cast<float> (output_x_resolution) / static_cast<float> (XN_SXGA_X_RES);
-    float scaledFocalLength = rgb_focal_length_SXGA_ * scale;
-    return scaledFocalLength;
-    */
+    return frameWidth / (2.0f * tan(hFov / 2.0f));
   }
 
   float OpenNI2Device::getDepthFocalLength(int output_x_resolution) const
@@ -224,18 +209,6 @@ namespace openni2_wrapper
     float hFov = stream->getHorizontalFieldOfView();
     float calculatedFocalLengthX = frameWidth / (2.0f * tan(hFov / 2.0f));
     return calculatedFocalLengthX;
-    
-    /*
-    if (output_x_resolution == 0)
-      output_x_resolution = stream->getVideoMode().getResolutionX();
-
-    float scale = static_cast<float> (output_x_resolution) / static_cast<float> (XN_SXGA_X_RES);
-
-    if (isDepthRegistered())
-      return (rgb_focal_length_SXGA_ * scale);
-    else
-      return (depth_focal_length_SXGA_ * scale);
-      */
   }
 
   bool OpenNI2Device::isIRVideoModeSupported(const OpenNI2VideoMode& video_mode) const
@@ -321,7 +294,6 @@ namespace openni2_wrapper
     }
 
   }
-
   void OpenNI2Device::startColorStream()
   {
     boost::shared_ptr<openni::VideoStream> stream = getColorVideoStream();
@@ -781,7 +753,7 @@ namespace openni2_wrapper
 
   boost::shared_ptr<openni::VideoStream> OpenNI2Device::getColorVideoStream() const throw ()
   {
-    if (color_video_stream_.get() == 0)
+    if (color_video_stream_.get() == nullptr)
     {
       if (hasColorSensor())
       {

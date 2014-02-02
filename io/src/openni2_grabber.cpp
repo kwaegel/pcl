@@ -41,6 +41,12 @@
 
 #include <pcl/io/openni2_grabber.h>
 #include <pcl/io/openni2_camera/openni2_device_manager.h>
+#include <pcl/io/openni2_camera/openni2_frame_listener.h>
+#include <pcl/io/openni2_camera/openni_image.h>
+#include <pcl/io/openni2_camera/openni_image_depth.h>
+#include <pcl/io/openni2_camera/openni_image_yuv_422.h>
+#include <pcl/io/openni2_camera/openni_image_rgb24.h>
+#include <pcl/io/openni2_camera/openni_image_ir.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/common/time.h>
@@ -48,6 +54,11 @@
 #include <pcl/io/boost.h>
 #include <pcl/exceptions.h>
 #include <iostream>
+
+using namespace openni2_wrapper;
+using openni_wrapper::Image;
+using openni_wrapper::DepthImage;
+
 
 namespace pcl
 {
@@ -83,7 +94,7 @@ pcl::OpenNIGrabber::OpenNIGrabber (const std::string& device_id, const Mode& dep
   , image_signal_ (), depth_image_signal_ (), ir_image_signal_ (), image_depth_image_signal_ ()
   , ir_depth_image_signal_ (), point_cloud_signal_ (), point_cloud_i_signal_ ()
   , point_cloud_rgb_signal_ (), point_cloud_rgba_signal_ ()
-  , config2oni_map_ (), depth_callback_handle (), image_callback_handle (), ir_callback_handle ()
+  , config2oni_map_ ()
   , running_ (false)
   , rgb_focal_length_x_ (std::numeric_limits<double>::quiet_NaN ())
   , rgb_focal_length_y_ (std::numeric_limits<double>::quiet_NaN ())
@@ -97,7 +108,7 @@ pcl::OpenNIGrabber::OpenNIGrabber (const std::string& device_id, const Mode& dep
   // initialize driver
   onInit (device_id, depth_mode, image_mode);
 
-  if (!device_->hasDepthSensor() )
+  if (!device_->hasSensor(openni::SENSOR_DEPTH))
     PCL_THROW_EXCEPTION (pcl::IOException, "Device does not provide 3D information.");
 
   depth_image_signal_    = createSignal<sig_cb_openni_depth_image> ();
@@ -107,7 +118,35 @@ pcl::OpenNIGrabber::OpenNIGrabber (const std::string& device_id, const Mode& dep
   ir_depth_image_signal_ = createSignal<sig_cb_openni_ir_depth_image> ();
   ir_sync_.addCallback (boost::bind (&OpenNIGrabber::irDepthImageCallback, this, _1, _2));
 
-  if (device_->hasColorSensor())
+  // Register callbacks from the sensor to the grabber
+  if (device_->hasSensor(openni::SENSOR_COLOR))
+  {
+    color_video_stream_->create(*device_, openni::SENSOR_COLOR);
+    color_frame_listener_ = boost::make_shared<openni2_wrapper::OpenNI2FrameListener>();
+    color_frame_listener_->setCallback(boost::bind(&OpenNIGrabber::processColorFrame, this, _1));
+    color_video_stream_->addNewFrameListener(color_frame_listener_.get());
+  }
+
+  if (device_->hasSensor(openni::SENSOR_DEPTH))
+  {
+    depth_video_stream_->create(*device_, openni::SENSOR_DEPTH);
+    depth_frame_listener_ = boost::make_shared<openni2_wrapper::OpenNI2FrameListener>();
+    depth_frame_listener_->setCallback(boost::bind(&OpenNIGrabber::processDepthFrame, this, _1));
+    depth_video_stream_->addNewFrameListener(depth_frame_listener_.get());
+  }
+
+  if (device_->hasSensor(openni::SENSOR_IR))
+  {
+    ir_video_stream_->create(*device_, openni::SENSOR_IR);
+    ir_frame_listener_ = boost::make_shared<openni2_wrapper::OpenNI2FrameListener>();
+    ir_frame_listener_->setCallback(boost::bind(&OpenNIGrabber::processIRFrame, this, _1));
+    ir_video_stream_->addNewFrameListener(ir_frame_listener_.get());
+  }
+
+
+  // Register signals for grabber clients.
+  // Assume we always have a depth image, so check for color sensor.
+  if (device_->hasSensor(openni::SENSOR_COLOR))
   {
     // create callback signals
     image_signal_             = createSignal<sig_cb_openni_image> ();
@@ -119,11 +158,6 @@ pcl::OpenNIGrabber::OpenNIGrabber (const std::string& device_id, const Mode& dep
     //if (kinect)
     //  kinect->setDebayeringMethod (openni_wrapper::ImageBayerGRBG::EdgeAware);
   }
-
-  // Register callbacks from the sensor to the grabber
-  image_callback_handle = device_->registerImageCallback (&OpenNIGrabber::imageCallback, *this);
-  depth_callback_handle = device_->registerDepthCallback (&OpenNIGrabber::depthCallback, *this);
-  ir_callback_handle    = device_->registerIRCallback (&OpenNIGrabber::irCallback, *this);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -134,13 +168,12 @@ pcl::OpenNIGrabber::~OpenNIGrabber () throw ()
     stop ();
 
     // unregister callbacks
-    device_->unregisterDepthCallback (depth_callback_handle);
-
-    if (device_->hasColorSensor() )
-      device_->unregisterImageCallback (image_callback_handle);
-
-    if (device_->hasIRSensor() )
-      device_->unregisterIRCallback (image_callback_handle);
+    if (device_->hasSensor(openni::SENSOR_DEPTH) )
+      depth_video_stream_->removeNewFrameListener(depth_frame_listener_.get());
+    if (device_->hasSensor(openni::SENSOR_COLOR) )
+      color_video_stream_->removeNewFrameListener(color_frame_listener_.get());
+    if (device_->hasSensor(openni::SENSOR_IR) )
+      ir_video_stream_->removeNewFrameListener(ir_frame_listener_.get());
 
     // release the pointer to the device object
     device_.reset ();
@@ -154,9 +187,6 @@ pcl::OpenNIGrabber::~OpenNIGrabber () throw ()
     disconnect_all_slots<sig_cb_openni_point_cloud_rgb> ();
     disconnect_all_slots<sig_cb_openni_point_cloud_rgba> ();
     disconnect_all_slots<sig_cb_openni_point_cloud_i> ();
-
-    //openni2_wrapper::OpenNIDriver& driver = openni2_wrapper::OpenNIDriver::getInstance ();
-    //driver.stopAll ();
   }
   catch (...)
   {
@@ -227,30 +257,30 @@ void
   try
   {
     // check if we need to start/stop any stream
-    if (image_required_ && !device_->isColorStreamStarted() )
+    if (image_required_)
     {
+      color_video_stream_->start();
       block_signals ();
-      device_->startColorStream ();
-      //startSynchronization ();
+      startSynchronization ();
     }
 
-    if (depth_required_ && !device_->isDepthStreamStarted ())
+    if (depth_required_)
     {
       block_signals ();
-      if (device_->hasColorSensor() 
-        //&& !device_->isDepthRegistered () 
-          && device_->isImageRegistrationModeSupported ())
+
+      if (device_->hasSensor(openni::SENSOR_COLOR)
+          && device_->isImageRegistrationModeSupported (openni::IMAGE_REGISTRATION_DEPTH_TO_COLOR) )
       {
-        //device_->setImageRegistrationMode(true);
+        device_->setImageRegistrationMode(openni::IMAGE_REGISTRATION_DEPTH_TO_COLOR);
       }
-      device_->startDepthStream ();
-      //startSynchronization ();
+      depth_video_stream_->start();
+      startSynchronization ();
     }
 
-    if (ir_required_ && !device_->isIRStreamStarted() )
+    if (ir_required_ )
     {
       block_signals ();
-      device_->startIRStream ();
+      ir_video_stream_->start();
     }
     running_ = true;
   }
@@ -258,7 +288,9 @@ void
   {
     PCL_THROW_EXCEPTION (pcl::IOException, "Could not start streams. Reason: " << ex.what ());
   }
+
   // workaround, since the first frame is corrupted
+  // TODO: Is this still true with OpenNI 2?
   boost::this_thread::sleep (boost::posix_time::seconds (1));
   unblock_signals ();
 }
@@ -269,14 +301,12 @@ void
 {
   try
   {
-    if (device_->hasDepthSensor () && device_->isDepthStreamStarted() )
-      device_->stopDepthStream ();
-
-    if (device_->hasColorSensor () && device_->isColorStreamStarted() )
-      device_->stopColorStream ();
-
-    if (device_->hasIRSensor() && device_->isIRStreamStarted ())
-      device_->stopIRStream ();
+    if (depth_video_stream_)
+      depth_video_stream_->stop();
+    if (color_video_stream_)
+      color_video_stream_->stop();
+    if (ir_video_stream_)
+      ir_video_stream_->stop();
 
     running_ = false;
   }
@@ -325,21 +355,22 @@ void
 std::string
   pcl::OpenNIGrabber::getName () const
 {
-  return std::string ("OpenNIGrabber");
+  return std::string ("OpenNI2Grabber");
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void
-  pcl::OpenNIGrabber::setupDevice (const std::string& device_id, const Mode& depth_mode, const Mode& image_mode)
+  pcl::OpenNIGrabber::setupDevice (const std::string& device_id, const Mode& depth_mode_enum, const Mode& image_mode_enum)
 {
   // Initialize the openni device
-  boost::shared_ptr<openni2_wrapper::OpenNI2DeviceManager> deviceManager = openni2_wrapper::OpenNI2DeviceManager::getInstance();
+  boost::shared_ptr<openni2_wrapper::OpenNI2DeviceManager> deviceManager 
+    = openni2_wrapper::OpenNI2DeviceManager::getInstance();
 
   try
   {
     if (boost::filesystem::exists (device_id))
     {
-      device_ = deviceManager->getFileDevice(device_id);	// Treat as file path
+      device_ = deviceManager->getDevice(device_id);	// Treat as file path
     }
     else if (deviceManager->getNumOfConnectedDevices() == 0)
     {
@@ -351,12 +382,6 @@ void
       //printf("[%s] searching for device with index = %d\n", getName().c_str(), index);
       device_ = deviceManager->getDeviceByIndex (index - 1);
     }
-    //else if (!device_id.empty ())
-    //{
-    //  printf("[%s] searching for device with serial number = %s\n", getName().c_str(), device_id.c_str());
-    //   TODO: re-enable?
-    //  device_ = deviceManager->getDeviceBySerialNumber (device_id);
-    //}
     else
     {
       device_ = deviceManager->getAnyDevice();
@@ -367,7 +392,7 @@ void
     if (!device_)
       PCL_THROW_EXCEPTION (pcl::IOException, "No matching device found. " << exception.what ())
     else
-    PCL_THROW_EXCEPTION (pcl::IOException, "could not retrieve device. Reason " << exception.what ())
+      PCL_THROW_EXCEPTION (pcl::IOException, "could not retrieve device. Reason " << exception.what ())
   }
   catch (const pcl::IOException&)
   {
@@ -381,12 +406,12 @@ void
   typedef openni2_wrapper::OpenNI2VideoMode VideoMode;
 
   VideoMode depth_md;
-  // Set the selected output mode
-  if (depth_mode != OpenNI_Default_Mode)
+  // Find compatable color mode
+  if (depth_mode_enum != OpenNI_Default_Mode)
   {
     VideoMode actual_depth_md;
-    if (!mapMode2XnMode (depth_mode, depth_md) || !device_->findCompatibleDepthMode (depth_md, actual_depth_md))
-      PCL_THROW_EXCEPTION (pcl::IOException, "could not find compatible depth stream mode " << static_cast<int> (depth_mode) );
+    if (!mapMode2XnMode (depth_mode_enum, depth_md) || !device_->findCompatibleDepthMode (depth_md, actual_depth_md))
+      PCL_THROW_EXCEPTION (pcl::IOException, "could not find compatible depth stream mode " << static_cast<int> (depth_mode_enum) );
 
     VideoMode current_depth_md =  device_->getDepthVideoMode ();
     if (current_depth_md.x_resolution_ != actual_depth_md.x_resolution_ || current_depth_md.y_resolution_ != actual_depth_md.y_resolution_)
@@ -394,20 +419,22 @@ void
   }
   else
   {
+    // Use default video mode
     depth_md = device_->getDefaultDepthMode ();
   }
 
   depth_width_ = depth_md.x_resolution_;
   depth_height_ = depth_md.y_resolution_;
 
-  if (device_->hasColorSensor())
+  // Find compatable color mode
+  if (device_->hasSensor(openni::SENSOR_COLOR))
   {
     VideoMode image_md;
-    if (image_mode != OpenNI_Default_Mode)
+    if (image_mode_enum != OpenNI_Default_Mode)
     {
       VideoMode actual_image_md;
-      if (!mapMode2XnMode (image_mode, image_md) || !device_->findCompatibleColorMode (image_md, actual_image_md))
-        PCL_THROW_EXCEPTION (pcl::IOException, "could not find compatible image stream mode " << static_cast<int> (image_mode) );
+      if (!mapMode2XnMode (image_mode_enum, image_md) || !device_->findCompatibleColorMode (image_md, actual_image_md))
+        PCL_THROW_EXCEPTION (pcl::IOException, "could not find compatible image stream mode " << static_cast<int> (image_mode_enum) );
 
       VideoMode current_image_md =  device_->getColorVideoMode ();
       if (current_image_md.x_resolution_ != actual_image_md.x_resolution_ || current_image_md.y_resolution_ != actual_image_md.y_resolution_)
@@ -427,16 +454,10 @@ void
 void
   pcl::OpenNIGrabber::startSynchronization ()
 {
-  try
+  openni::Status status = device_->setDepthColorSyncEnabled(true);
+  if (status != openni::STATUS_OK)
   {
-    if (device_->isSynchronizationSupported () && !device_->isSynchronized () &&
-      device_->getColorVideoMode().frame_rate_ == device_->getColorVideoMode().frame_rate_ &&
-      device_->isColorStreamStarted() && device_->isDepthStreamStarted())
-      device_->setSynchronization (true);
-  }
-  catch (const openni_wrapper::OpenNIException& exception)
-  {
-    PCL_THROW_EXCEPTION (pcl::IOException, "Could not start synchronization " << exception.what ());
+    PCL_THROW_EXCEPTION (pcl::IOException, "Could not start synchronization.");
   }
 }
 
@@ -444,16 +465,77 @@ void
 void
   pcl::OpenNIGrabber::stopSynchronization ()
 {
-  try
+  openni::Status status = device_->setDepthColorSyncEnabled(false);
+  if (status != openni::STATUS_OK)
   {
-    if (device_->isSynchronizationSupported () && device_->isSynchronized ())
-      device_->setSynchronization (false);
-  }
-  catch (const openni_wrapper::OpenNIException& exception)
-  {
-    PCL_THROW_EXCEPTION (pcl::IOException, "Could not start synchronization " << exception.what ());
+    PCL_THROW_EXCEPTION (pcl::IOException, "Could not stop synchronization.");
   }
 }
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+// Convert VideoFrameRef into pcl::Image and forward to registered callbacks
+void pcl::OpenNIGrabber::processColorFrame(openni::VideoStream& stream)
+{
+  openni::VideoFrameRef frame;
+  stream.readFrame(&frame);
+
+  boost::chrono::high_resolution_clock::time_point t_readFrameTimestamp = boost::chrono::high_resolution_clock::now();
+
+  openni::PixelFormat format = frame.getVideoMode().getPixelFormat();
+  boost::shared_ptr<openni_wrapper::Image> image;
+
+  // Convert frame to PCL image type, based on pixel format
+  if (format == openni::PIXEL_FORMAT_YUV422)
+    image = boost::make_shared<openni_wrapper::ImageYUV422> (frame, t_readFrameTimestamp);
+  else //if (format == PixelFormat::PIXEL_FORMAT_RGB888)
+    image = boost::make_shared<openni_wrapper::ImageRGB24> (frame, t_readFrameTimestamp);
+
+  // Notify listeners of new frame
+  imageCallback(image, this);
+}
+
+
+void pcl::OpenNIGrabber::processDepthFrame(openni::VideoStream& stream)
+{
+  openni::VideoFrameRef frame;
+  stream.readFrame(&frame);
+  boost::posix_time::ptime t_readFrameTimestamp = boost::posix_time::microsec_clock::local_time();
+
+  float focalLength = getStreamFocalLength(depth_video_stream_);
+
+  //status = depth_video_stream_->getProperty("LDDIS", baseline);
+  double baseline = 7.62;	// HACK. Not sure how to read from device
+  
+  //status = depth_video_stream_->getProperty("LDDIS", baseline);
+  uint64_t shadow_value_ = 0; // HACK. Not sure how to read from device
+  
+  //status = depth_video_stream_->getProperty("NoSampleValue", no_sample_value_);
+  uint64_t no_sample_value_ = depth_video_stream_->getMinPixelValue();
+
+  // Need: data, baseline_, getDepthFocalLength (), shadow_value_, no_sample_value_
+  boost::shared_ptr<openni_wrapper::DepthImage> image = 
+    boost::make_shared<openni_wrapper::DepthImage> (frame, baseline, focalLength, shadow_value_, no_sample_value_);
+
+  // Notify listeners of new frame
+  depthCallback(image, this);
+}
+
+
+void pcl::OpenNIGrabber::processIRFrame(openni::VideoStream& stream)
+{
+  openni::VideoFrameRef frame;
+  stream.readFrame(&frame);
+  boost::posix_time::ptime t_readFrameTimestamp = boost::posix_time::microsec_clock::local_time();
+
+  boost::shared_ptr<openni_wrapper::IRImage> image = boost::make_shared<openni_wrapper::IRImage> (frame);
+
+  // Notify listeners of new frame
+  irCallback(image, this);
+}
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void
@@ -518,7 +600,7 @@ void
 
   if (image_depth_image_signal_->num_slots () > 0)
   {
-    float reciprocalFocalLength = 1.0f / device_->getDepthFocalLength (depth_width_);
+    float reciprocalFocalLength = 1.0f / getStreamFocalLength(depth_video_stream_);
     image_depth_image_signal_->operator()(image, depth_image, reciprocalFocalLength);
   }
 }
@@ -534,7 +616,7 @@ void
 
   if (ir_depth_image_signal_->num_slots () > 0)
   {
-    float reciprocalFocalLength = 1.0f / device_->getDepthFocalLength (depth_width_);
+    float reciprocalFocalLength = 1.0f / getStreamFocalLength(depth_video_stream_);
     ir_depth_image_signal_->operator()(ir_image, depth_image, reciprocalFocalLength);
   }
 }
@@ -552,8 +634,8 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr
 
   cloud->points.resize (cloud->height * cloud->width);
 
-  register float constant_x = 1.0f / device_->getDepthFocalLength (depth_width_);
-  register float constant_y = 1.0f / device_->getDepthFocalLength (depth_width_);
+  register float constant_x = 1.0f / getStreamFocalLength(depth_video_stream_);
+  register float constant_y = 1.0f / getStreamFocalLength(depth_video_stream_);
   register float centerX = ((float)cloud->width - 1.f) / 2.f;
   register float centerY = ((float)cloud->height - 1.f) / 2.f;
 
@@ -773,8 +855,8 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr
   cloud->points.resize (cloud->height * cloud->width);
 
 
-  float fx = device_->getColorFocalLength (depth_width_); // Horizontal focal length
-  float fy = device_->getColorFocalLength (depth_width_); // Vertcal focal length
+  float fx = getStreamFocalLength(color_video_stream_); // Horizontal focal length
+  float fy = getStreamFocalLength(color_video_stream_);; // Vertcal focal length
   register float cx = ((float)cloud->width - 1.f) / 2.f;  // Center x
   register float cy = ((float)cloud->height - 1.f) / 2.f; // Center y
 
@@ -853,11 +935,9 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // TODO: delete me?
 void
-  pcl::OpenNIGrabber::updateModeMaps ()
+pcl::OpenNIGrabber::updateModeMaps ()
 {
   typedef openni2_wrapper::OpenNI2VideoMode VideoMode;
-
-  openni2_wrapper::OpenNI2VideoMode output_mode;
 
   config2oni_map_[OpenNI_SXGA_15Hz] = VideoMode(XN_SXGA_X_RES, XN_SXGA_Y_RES, 15);
 
@@ -875,9 +955,9 @@ void
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool
-  pcl::OpenNIGrabber::mapMode2XnMode (int mode, openni2_wrapper::OpenNI2VideoMode &xnmode) const
+pcl::OpenNIGrabber::mapMode2XnMode (Mode mode, openni2_wrapper::OpenNI2VideoMode &xnmode) const
 {
-  std::map<int, openni2_wrapper::OpenNI2VideoMode>::const_iterator it = config2oni_map_.find (mode);
+  std::map<Mode, openni2_wrapper::OpenNI2VideoMode>::const_iterator it = config2oni_map_.find (mode);
   if (it != config2oni_map_.end ())
   {
     xnmode = it->second;
@@ -895,7 +975,7 @@ std::vector<std::pair<int, openni2_wrapper::OpenNI2VideoMode> >
 {
   openni2_wrapper::OpenNI2VideoMode dummy;
   std::vector<std::pair<int, openni2_wrapper::OpenNI2VideoMode> > result;
-  for (std::map<int, openni2_wrapper::OpenNI2VideoMode>::const_iterator it = config2oni_map_.begin (); it != config2oni_map_.end (); ++it)
+  for (auto it = config2oni_map_.begin (); it != config2oni_map_.end (); ++it)
   {
     if (device_->findCompatibleDepthMode (it->second, dummy))
       result.push_back (*it);
@@ -910,10 +990,10 @@ std::vector<std::pair<int, openni2_wrapper::OpenNI2VideoMode> >
 {
   openni2_wrapper::OpenNI2VideoMode dummy;
   std::vector<std::pair<int, openni2_wrapper::OpenNI2VideoMode> > result;
-  for (std::map<int, openni2_wrapper::OpenNI2VideoMode>::const_iterator it = config2oni_map_.begin (); it != config2oni_map_.end (); ++it)
+  for (auto itr = config2oni_map_.begin (); itr != config2oni_map_.end (); ++itr)
   {
-    if (device_->findCompatibleColorMode (it->second, dummy))
-      result.push_back (*it);
+    if (device_->findCompatibleColorMode (itr->second, dummy))
+      result.push_back (*itr);
   }
 
   return (result);
@@ -921,9 +1001,18 @@ std::vector<std::pair<int, openni2_wrapper::OpenNI2VideoMode> >
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 float
-  pcl::OpenNIGrabber::getFramesPerSecond () const
+pcl::OpenNIGrabber::getFramesPerSecond () const
 {
-  return (static_cast<float> (device_->getColorVideoMode().frame_rate_));
+  depth_video_stream_->getVideoMode().getFps();
+  return ( (float) depth_video_stream_->getVideoMode().getFps() );
+}
+
+float pcl::OpenNIGrabber::getStreamFocalLength(boost::shared_ptr<openni::VideoStream> stream) const
+{
+  int frameWidth = stream->getVideoMode().getResolutionX();
+  float hFov = stream->getHorizontalFieldOfView();
+  float calculatedFocalLengthX = frameWidth / (2.0f * tan(hFov / 2.0f));
+  return calculatedFocalLengthX;
 }
 
 #endif
