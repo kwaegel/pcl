@@ -310,11 +310,26 @@ main (int argc, char** argv)
 			{
         // Create grabber using arguments
 				pcl::OpenNIGrabber grabber(argv[2]);
-        cout << grabber.getName() << endl;
 
-        // Need a way to print out all sensor data. Overload operator<< for grabber?
-        // auto device = grabber.getDevice();
-				// cout << *device;		// Prints out all sensor data, including supported video modes
+        const openni::DeviceInfo& device_info = grabber.getDeviceInfo();
+        const openni::Array<openni::VideoMode>& depth_modes = grabber.getAvailableDepthModes();
+        cout << "Supported depth modes for device: " << device_info.getVendor() << ", " << device_info.getName() << endl;
+        for (int i = 0; i < depth_modes.getSize(); ++i)
+        {
+          openni::VideoMode mode = depth_modes[i];
+          cout << i << " = " << mode.getResolutionX() << " x " << mode.getResolutionY() << " @ " << mode.getFps() << endl;
+        }
+
+        const openni::Array<openni::VideoMode>& color_modes = grabber.getAvailableImageModes();
+        if (color_modes.getSize() > 0)
+        {
+          cout << endl << "Supported image modes for device: " << device_info.getVendor() << ", " << device_info.getName() << endl;
+        }
+        for (int i = 0; i < color_modes.getSize(); ++i)
+        {
+          openni::VideoMode mode = color_modes[i];
+          cout << i << " = " << mode.getResolutionX() << " x " << mode.getResolutionY() << " @ " << mode.getFps() << endl;
+        }
 			}
 			else
 			{

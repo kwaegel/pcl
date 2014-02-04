@@ -79,7 +79,7 @@ namespace pcl
       OpenNI_Default_Mode = 2, // This can depend on the device. For now all devices (PSDK, Xtion, Kinect) its VGA@30Hz
       OpenNI_SXGA_15Hz = 1,    // Only supported by the Kinect
       OpenNI_VGA_30Hz = 2,     // Supported by PSDK, Xtion and Kinect
-      OpenNI_VGA_25Hz = 3,     // Supportged by PSDK and Xtion
+      OpenNI_VGA_25Hz = 3,     // Supported by PSDK and Xtion
       OpenNI_QVGA_25Hz = 4,    // Supported by PSDK and Xtion
       OpenNI_QVGA_30Hz = 5,    // Supported by PSDK, Xtion and Kinect
       OpenNI_QVGA_60Hz = 6,    // Supported by PSDK and Xtion
@@ -139,12 +139,13 @@ namespace pcl
       getDevice () const;
 
     /** \brief Obtain a list of the available depth modes that this device supports. */
-    std::vector<std::pair<int, openni2_wrapper::OpenNI2VideoMode> >
-      getAvailableDepthModes () const;
+    const openni::Array<openni::VideoMode>& getAvailableDepthModes () const;
 
     /** \brief Obtain a list of the available image modes that this device supports. */
-    std::vector<std::pair<int, openni2_wrapper::OpenNI2VideoMode> >
-      getAvailableImageModes () const;
+    const openni::Array<openni::VideoMode>& getAvailableImageModes () const;
+
+    /** \brief Obtain information about the device. */
+    const openni::DeviceInfo& getDeviceInfo() const;
 
     /** \brief Set the RGB camera parameters (fx, fy, cx, cy)
     * \param[in] rgb_focal_length_x the RGB focal length (fx)
@@ -331,11 +332,15 @@ namespace pcl
   protected:
     /** \brief On initialization processing. */
     void
-      onInit (const std::string& device_id, const Mode& depth_mode, const Mode& image_mode);
+      onInit (const std::string& device_id);
 
     /** \brief Sets up an OpenNI device. */
     void
-      setupDevice (const std::string& device_id, const Mode& depth_mode, const Mode& image_mode);
+      setupDevice (const std::string& device_id);
+
+    /** \brief Setup modes of available sensors. */
+    void
+      setupSensorModes(const Mode& depth_mode_enum, const Mode& image_mode_enum);
 
     /** \brief Update mode maps. */
     void
@@ -427,6 +432,13 @@ namespace pcl
       convertToXYZIPointCloud (const boost::shared_ptr<openni_wrapper::IRImage> &image,
       const boost::shared_ptr<openni_wrapper::DepthImage> &depth_image) const;
 
+    /** \brief Check if mode is supported by sensor
+    * \param[in] info information about the sensor
+    * \param[in] mode mode that should be checked
+    * \param[out] video_mode If mode is supported, this variable will contain an instance of OpenNI VideoMode class
+    * \ret TRUE if mode is supported, FALSE otherwise
+    */
+    bool isModeSupported(const openni::SensorInfo& info, Mode mode, openni::VideoMode& video_mode) const;
 
     Synchronizer<boost::shared_ptr<openni_wrapper::Image>, boost::shared_ptr<openni_wrapper::DepthImage> > rgb_sync_;
     Synchronizer<boost::shared_ptr<openni_wrapper::IRImage>, boost::shared_ptr<openni_wrapper::DepthImage> > ir_sync_;
