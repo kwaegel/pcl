@@ -182,7 +182,7 @@ public:
 	{
 		cloud_viewer_->registerMouseCallback (&OpenNI2Viewer::mouse_callback, *this);
 		cloud_viewer_->registerKeyboardCallback(&OpenNI2Viewer::keyboard_callback, *this);
-    cloud_viewer_->setCameraFieldOfView(1.02259994f);
+	cloud_viewer_->setCameraFieldOfView(1.02259994f);
 		boost::function<void (const CloudConstPtr&) > cloud_cb = boost::bind (&OpenNI2Viewer::cloud_callback, this, _1);
 		boost::signals2::connection cloud_connection = grabber_.registerCallback (cloud_cb);
 
@@ -292,8 +292,8 @@ int
 main (int argc, char** argv)
 {
 	std::string device_id("");
-	pcl::OpenNIGrabber::Mode depth_mode = pcl::OpenNIGrabber::OpenNI_Default_Mode;
-	pcl::OpenNIGrabber::Mode image_mode = pcl::OpenNIGrabber::OpenNI_Default_Mode;
+	int depth_mode = pcl::OpenNIGrabber::OpenNI_Default_Mode;
+	int image_mode = pcl::OpenNIGrabber::OpenNI_Default_Mode;
 	bool xyz = false;
 
 	if (argc >= 2)
@@ -308,41 +308,43 @@ main (int argc, char** argv)
 		{
 			if (argc >= 3)
 			{
-        // Create grabber using arguments
+				// Create grabber using arguments
 				pcl::OpenNIGrabber grabber(argv[2]);
 
-        const openni::DeviceInfo& device_info = grabber.getDeviceInfo();
-        const openni::Array<openni::VideoMode>& depth_modes = grabber.getAvailableDepthModes();
-        cout << "Supported depth modes for device: " << device_info.getVendor() << ", " << device_info.getName() << endl;
-        for (int i = 0; i < depth_modes.getSize(); ++i)
-        {
-          openni::VideoMode mode = depth_modes[i];
-          cout << i << " = " << mode.getResolutionX() << " x " << mode.getResolutionY() << " @ " << mode.getFps() << endl;
-        }
+				const auto& device_info = grabber.getDeviceInfo();
+				cout << "Supported depth modes for device: " << device_info.getVendor() << ", " << device_info.getName() << endl;
 
-        const openni::Array<openni::VideoMode>& color_modes = grabber.getAvailableImageModes();
-        if (color_modes.getSize() > 0)
-        {
-          cout << endl << "Supported image modes for device: " << device_info.getVendor() << ", " << device_info.getName() << endl;
-        }
-        for (int i = 0; i < color_modes.getSize(); ++i)
-        {
-          openni::VideoMode mode = color_modes[i];
-          cout << i << " = " << mode.getResolutionX() << " x " << mode.getResolutionY() << " @ " << mode.getFps() << endl;
-        }
+				const auto& depth_modes = grabber.getAvailableDepthModes();
+				auto it = depth_modes.cbegin();
+				for (int i = 0; it != depth_modes.cend(); ++it, i++)
+				{
+					auto mode = *it;
+					cout << i << " = " << mode.getResolutionX() << " x " << mode.getResolutionY() << " @ " << mode.getFps() << endl;
+				}
+
+				const auto& color_modes = grabber.getAvailableImageModes();
+				it = color_modes.cbegin();
+				if (!color_modes.empty())
+				{
+					cout << endl << "Supported image modes for device: " << device_info.getVendor() << ", " << device_info.getName() << endl;
+				}
+				for (int i = 0; it != color_modes.cend(); ++it, i++)
+				{
+					auto mode = *it;
+					cout << i << " = " << mode.getResolutionX() << " x " << mode.getResolutionY() << " @ " << mode.getFps() << endl;
+				}
 			}
 			else
 			{
-        // List all connected devices
+				// List all connected devices
 				auto deviceManager = openni2_wrapper::OpenNI2DeviceManager::getInstance();
 				if (deviceManager->getNumOfConnectedDevices() > 0)
 				{
 					for (unsigned deviceIdx = 0; deviceIdx < deviceManager->getNumOfConnectedDevices(); ++deviceIdx)
 					{
 						auto device = deviceManager->getDeviceByIndex(deviceIdx);
-            cout << "Device " << device->getDeviceInfo().getName() << "connected." << endl;
+						cout << "Device " << device->getDeviceInfo().getName() << "connected." << endl;
 					}
-
 				}
 				else
 					cout << "No devices connected." << endl;
@@ -354,21 +356,21 @@ main (int argc, char** argv)
 	}
 	else
 	{
-    // Show default device info
+	// Show default device info
 		auto deviceManager = openni2_wrapper::OpenNI2DeviceManager::getInstance();
 		if (deviceManager->getNumOfConnectedDevices() > 0)
 		{
 			auto device = deviceManager->getAnyDevice();
-      cout << "Device ID not set, using default device: " << device->getDeviceInfo().getName() << endl;
+			cout << "Device ID not set, using default device: " << device->getDeviceInfo().getName() << endl;
 		}
 	}
 
 	unsigned mode;
 	if (pcl::console::parse(argc, argv, "-depthmode", mode) != -1)
-		depth_mode = pcl::OpenNIGrabber::Mode (mode);
+		depth_mode = mode;
 
 	if (pcl::console::parse(argc, argv, "-imagemode", mode) != -1)
-		image_mode = pcl::OpenNIGrabber::Mode (mode);
+		image_mode = mode;
 
 	if (pcl::console::find_argument (argc, argv, "-xyz") != -1)
 		xyz = true;

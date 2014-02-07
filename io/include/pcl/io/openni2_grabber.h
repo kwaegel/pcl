@@ -72,21 +72,8 @@ namespace pcl
   public:
     typedef boost::shared_ptr<OpenNIGrabber> Ptr;
     typedef boost::shared_ptr<const OpenNIGrabber> ConstPtr;
-
-    // Predefined modes. Not all will be available for every device.
-    typedef enum
-    {
-      OpenNI_Default_Mode = 2, // This can depend on the device. For now all devices (PSDK, Xtion, Kinect) its VGA@30Hz
-      OpenNI_SXGA_15Hz = 1,    // Only supported by the Kinect
-      OpenNI_VGA_30Hz = 2,     // Supported by PSDK, Xtion and Kinect
-      OpenNI_VGA_25Hz = 3,     // Supported by PSDK and Xtion
-      OpenNI_QVGA_25Hz = 4,    // Supported by PSDK and Xtion
-      OpenNI_QVGA_30Hz = 5,    // Supported by PSDK, Xtion and Kinect
-      OpenNI_QVGA_60Hz = 6,    // Supported by PSDK and Xtion
-      OpenNI_QQVGA_25Hz = 7,   // Not supported -> using software downsampling (only for integer scale factor and only NN)
-      OpenNI_QQVGA_30Hz = 8,   // Not supported -> using software downsampling (only for integer scale factor and only NN)
-      OpenNI_QQVGA_60Hz = 9    // Not supported -> using software downsampling (only for integer scale factor and only NN)
-    } Mode;
+    // Value that specifies default video mode for a device sensor
+    static const int OpenNI_Default_Mode = -1;
 
     //define callback signature typedefs
     typedef void (sig_cb_openni_image) (const boost::shared_ptr<openni_wrapper::Image>&);
@@ -106,8 +93,8 @@ namespace pcl
     * \param[in] image_mode the mode of the image stream
     */
     OpenNIGrabber (const std::string& device_id = "",
-      const Mode& depth_mode = OpenNI_Default_Mode,
-      const Mode& image_mode = OpenNI_Default_Mode);
+      const int depth_mode = OpenNI_Default_Mode,
+      const int image_mode = OpenNI_Default_Mode);
 
     /** \brief virtual Destructor inherited from the Grabber interface. It never throws. */
     virtual ~OpenNIGrabber () throw ();
@@ -139,10 +126,10 @@ namespace pcl
       getDevice () const;
 
     /** \brief Obtain a list of the available depth modes that this device supports. */
-    const openni::Array<openni::VideoMode>& getAvailableDepthModes () const;
+    const std::vector<openni::VideoMode>& getAvailableDepthModes ();
 
     /** \brief Obtain a list of the available image modes that this device supports. */
-    const openni::Array<openni::VideoMode>& getAvailableImageModes () const;
+    const std::vector<openni::VideoMode>& getAvailableImageModes ();
 
     /** \brief Obtain information about the device. */
     const openni::DeviceInfo& getDeviceInfo() const;
@@ -340,11 +327,7 @@ namespace pcl
 
     /** \brief Setup modes of available sensors. */
     void
-      setupSensorModes(const Mode& depth_mode_enum, const Mode& image_mode_enum);
-
-    /** \brief Update mode maps. */
-    void
-      updateModeMaps ();
+      setupSensorModes(const int depth_mode_enum = OpenNI_Default_Mode, const int image_mode_enum = OpenNI_Default_Mode);
 
     /** \brief Start synchronization. */
     void
@@ -353,11 +336,6 @@ namespace pcl
     /** \brief Stop synchronization. */
     void
       stopSynchronization ();
-
-    // TODO: rename to mapMode2OniMode
-    /** \brief Map config modes. */
-    bool
-      mapMode2XnMode (Mode mode, openni2_wrapper::OpenNI2VideoMode& videoMode) const;
 
     // callback methods
     /** \brief RGB image callback. */
@@ -371,7 +349,6 @@ namespace pcl
     /** \brief IR image callback. */
     virtual void
       irCallback (boost::shared_ptr<openni_wrapper::IRImage> ir_image, void* cookie);
-
 
     virtual void processColorFrame(openni::VideoStream& stream);
     virtual void processDepthFrame(openni::VideoStream& stream);
@@ -432,13 +409,7 @@ namespace pcl
       convertToXYZIPointCloud (const boost::shared_ptr<openni_wrapper::IRImage> &image,
       const boost::shared_ptr<openni_wrapper::DepthImage> &depth_image) const;
 
-    /** \brief Check if mode is supported by sensor
-    * \param[in] info information about the sensor
-    * \param[in] mode mode that should be checked
-    * \param[out] video_mode If mode is supported, this variable will contain an instance of OpenNI VideoMode class
-    * \ret TRUE if mode is supported, FALSE otherwise
-    */
-    bool isModeSupported(const openni::SensorInfo& info, Mode mode, openni::VideoMode& video_mode) const;
+    void fillVideoModes(const openni::SensorInfo* sensor_info, std::vector<openni::VideoMode>& modes);
 
     Synchronizer<boost::shared_ptr<openni_wrapper::Image>, boost::shared_ptr<openni_wrapper::DepthImage> > rgb_sync_;
     Synchronizer<boost::shared_ptr<openni_wrapper::IRImage>, boost::shared_ptr<openni_wrapper::DepthImage> > ir_sync_;
@@ -454,8 +425,11 @@ namespace pcl
     boost::shared_ptr<openni2_wrapper::OpenNI2FrameListener> color_frame_listener_;
     boost::shared_ptr<openni2_wrapper::OpenNI2FrameListener> depth_frame_listener_;
 
-    float getStreamFocalLength(boost::shared_ptr<openni::VideoStream> stream) const;
+    std::vector<openni::VideoMode> ir_video_modes_;
+    std::vector<openni::VideoMode> color_video_modes_;
+    std::vector<openni::VideoMode> depth_video_modes_;
 
+    float getStreamFocalLength(boost::shared_ptr<openni::VideoStream> stream) const;
 
     std::string rgb_frame_id_;
     std::string depth_frame_id_;
@@ -498,8 +472,6 @@ namespace pcl
           return false;
       }
     } ;
-    // Mapping from config (enum) modes to native OpenNI modes
-    std::map<Mode, openni2_wrapper::OpenNI2VideoMode> config2oni_map_;
 
     //openni2_wrapper::OpenNI2Device::CallbackHandle depth_callback_handle;
     //openni2_wrapper::OpenNI2Device::CallbackHandle image_callback_handle;
