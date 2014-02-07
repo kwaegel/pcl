@@ -78,7 +78,7 @@ namespace openni2_wrapper
     output.x_resolution_ = input.getResolutionX();
     output.y_resolution_ = input.getResolutionY();
     output.frame_rate_ = input.getFps();
-    output.pixel_format_ = static_cast<PixelFormat>(input.getPixelFormat());
+    output.pixel_format_ = input.getPixelFormat();
 
     return output;
   }
