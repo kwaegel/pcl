@@ -261,7 +261,6 @@ namespace pcl
           setAutomaticFrameEvents( bool enableTriggering );
 
         protected:
-          void shutdown ();
 
           bool
           findCompatibleVideoMode (const std::vector<OpenNI2VideoMode> supportedModes,
