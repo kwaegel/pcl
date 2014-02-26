@@ -77,22 +77,35 @@ pcl::io::openni2::OpenNI2Device::OpenNI2Device (const std::string& device_URI)
   if (status != openni::STATUS_OK)
     THROW_IO_EXCEPTION ("Initialize failed\n%s\n", openni::OpenNI::getExtendedError ());
 
+  color_frame_listener = boost::make_shared<OpenNI2FrameListener>();
+  depth_frame_listener = boost::make_shared<OpenNI2FrameListener>();
+  ir_frame_listener    = boost::make_shared<OpenNI2FrameListener>();
+
   // Create streams
-  color_video_stream_ = boost::make_shared<openni::VideoStream>();
+  color_video_stream_ = boost::make_shared<openni::VideoStream> ();
   if (openni_device_->hasSensor(SENSOR_COLOR))
-    color_video_stream_->create(*openni_device_, SENSOR_COLOR);
+  {
+    color_video_stream_->create (*openni_device_, SENSOR_COLOR);
+    color_video_stream_->addNewFrameListener (color_frame_listener.get());
+  }
 
   depth_video_stream_ = boost::make_shared<openni::VideoStream>();
   if (openni_device_->hasSensor(SENSOR_DEPTH))
-    depth_video_stream_->create(*openni_device_, SENSOR_DEPTH);
+  {
+    depth_video_stream_->create (*openni_device_, SENSOR_DEPTH);
+    depth_video_stream_->addNewFrameListener (depth_frame_listener.get());
+  }
 
   ir_video_stream_ = boost::make_shared<openni::VideoStream>();
   if (openni_device_->hasSensor(SENSOR_IR))
-    ir_video_stream_->create(*openni_device_, SENSOR_COLOR);
+  {
+    ir_video_stream_->create (*openni_device_, SENSOR_COLOR);
+    ir_video_stream_->addNewFrameListener ( ir_frame_listener.get() );
+  }
 
   // Get depth calculation parameters
   // Some of these are device-spefic and may not exist
-  if ( depth_video_stream_ && depth_video_stream_->isPropertySupported (XN_STREAM_PROPERTY_EMITTER_DCMOS_DISTANCE) )
+  if ( depth_video_stream_->isValid() && depth_video_stream_->isPropertySupported (XN_STREAM_PROPERTY_EMITTER_DCMOS_DISTANCE) )
   {
     double baseline;
     depth_video_stream_->getProperty (XN_STREAM_PROPERTY_EMITTER_DCMOS_DISTANCE, &baseline); // Device specific -- from PS1080.h
@@ -114,10 +127,6 @@ pcl::io::openni2::OpenNI2Device::OpenNI2Device (const std::string& device_URI)
 
   device_info_ = boost::make_shared<openni::DeviceInfo>();
   *device_info_ = openni_device_->getDeviceInfo ();
-
-  color_frame_listener = boost::make_shared<OpenNI2FrameListener>();
-  depth_frame_listener = boost::make_shared<OpenNI2FrameListener>();
-  ir_frame_listener    = boost::make_shared<OpenNI2FrameListener>();
 }
 
 pcl::io::openni2::OpenNI2Device::~OpenNI2Device ()
@@ -297,7 +306,6 @@ pcl::io::openni2::OpenNI2Device::startIRStream ()
   if ( ir_video_stream_->isValid() )
   {
     ir_video_stream_->setMirroringEnabled (false);
-    ir_video_stream_->addNewFrameListener (ir_frame_listener.get ());
     ir_video_stream_->start ();
     ir_video_started_ = true;
   }
@@ -309,7 +317,6 @@ pcl::io::openni2::OpenNI2Device::startColorStream ()
   if ( color_video_stream_->isValid() )
   {
     color_video_stream_->setMirroringEnabled (false);
-    color_video_stream_->addNewFrameListener (color_frame_listener.get ());
     color_video_stream_->start ();
     color_video_started_ = true;
   }
@@ -321,7 +328,6 @@ pcl::io::openni2::OpenNI2Device::startDepthStream ()
   if ( depth_video_stream_->isValid() )
   {
     depth_video_stream_->setMirroringEnabled (false);
-    depth_video_stream_->addNewFrameListener (depth_frame_listener.get ());
     depth_video_stream_->start ();
     depth_video_started_ = true;
   }
@@ -341,6 +347,24 @@ pcl::io::openni2::OpenNI2Device::triggerSingleFrame()
     ir_frame_listener->onNewFrame(*ir_video_stream_);
 }
 
+// Set the playback speed for file devices. Flag values 0 = maximum possible, -1 = paused (manual reading)
+void
+pcl::io::openni2::OpenNI2Device::setPlaybackSpeed(float percentOfRecordingSpeed)
+{
+  if ( openni_device_->isValid() && openni_device_->isFile() )
+  {
+    openni::PlaybackControl* control = openni_device_->getPlaybackControl();
+    if (control)
+    {
+      control->setSpeed(percentOfRecordingSpeed);
+
+      if (percentOfRecordingSpeed == -1)
+        setAutomaticFrameEvents(false);
+    }
+  }
+}
+
+
 void
 pcl::io::openni2::OpenNI2Device::stopAllStreams ()
 {
@@ -352,7 +376,7 @@ pcl::io::openni2::OpenNI2Device::stopAllStreams ()
 void
 pcl::io::openni2::OpenNI2Device::stopIRStream ()
 {
-  if (ir_video_stream_.get () != 0)
+  if ( ir_video_stream_->isValid() )
   {
     ir_video_stream_->stop ();
     ir_video_started_ = false;
@@ -361,7 +385,7 @@ pcl::io::openni2::OpenNI2Device::stopIRStream ()
 void
 pcl::io::openni2::OpenNI2Device::stopColorStream ()
 {
-  if (color_video_stream_.get () != 0)
+  if ( color_video_stream_->isValid() )
   {
     color_video_stream_->stop ();
     color_video_started_ = false;
@@ -370,7 +394,7 @@ pcl::io::openni2::OpenNI2Device::stopColorStream ()
 void
 pcl::io::openni2::OpenNI2Device::stopDepthStream ()
 {
-  if (depth_video_stream_.get () != 0)
+  if (depth_video_stream_->isValid())
   {
     depth_video_stream_->stop ();
     depth_video_started_ = false;
@@ -380,13 +404,13 @@ pcl::io::openni2::OpenNI2Device::stopDepthStream ()
 void
 pcl::io::openni2::OpenNI2Device::shutdown ()
 {
-  if (ir_video_stream_.get () != 0)
+  if ( ir_video_stream_->isValid() )
     ir_video_stream_->destroy ();
 
-  if (color_video_stream_.get () != 0)
+  if ( color_video_stream_->isValid() )
     color_video_stream_->destroy ();
 
-  if (depth_video_stream_.get () != 0)
+  if ( depth_video_stream_->isValid() )
     depth_video_stream_->destroy ();
 
 }
@@ -453,7 +477,7 @@ pcl::io::openni2::OpenNI2Device::getIRVideoMode () const
 {
   OpenNI2VideoMode ret;
 
-  if (ir_video_stream_)
+  if ( ir_video_stream_->isValid() )
   {
     openni::VideoMode video_mode = ir_video_stream_->getVideoMode ();
 
@@ -470,7 +494,7 @@ pcl::io::openni2::OpenNI2Device::getColorVideoMode () const
 {
   OpenNI2VideoMode ret;
 
-  if (color_video_stream_)
+  if ( color_video_stream_->isValid() )
   {
     openni::VideoMode video_mode = color_video_stream_->getVideoMode ();
 
@@ -487,7 +511,7 @@ pcl::io::openni2::OpenNI2Device::getDepthVideoMode () const
 {
   OpenNI2VideoMode ret;
 
-  if (depth_video_stream_)
+  if ( depth_video_stream_->isValid() )
   {
     openni::VideoMode video_mode = depth_video_stream_->getVideoMode ();
 
@@ -514,7 +538,7 @@ pcl::io::openni2::OpenNI2Device::setIRVideoMode (const OpenNI2VideoMode& video_m
 void
 pcl::io::openni2::OpenNI2Device::setColorVideoMode (const OpenNI2VideoMode& video_mode)
 {
-  if (color_video_stream_)
+  if ( color_video_stream_->isValid() )
   {
     openni::VideoMode videoMode = grabberModeToOpenniMode (video_mode);
     const openni::Status rc = color_video_stream_->setVideoMode (videoMode);
@@ -582,7 +606,7 @@ pcl::io::openni2::OpenNI2Device::getSupportedIRVideoModes () const
 {
   ir_video_modes_.clear ();
 
-  if (ir_video_stream_)
+  if ( ir_video_stream_->isValid() )
   {
     const openni::SensorInfo& sensor_info = ir_video_stream_->getSensorInfo ();
 
@@ -724,7 +748,7 @@ void
 pcl::io::openni2::OpenNI2Device::setAutoWhiteBalance (bool enable)
 {
 
-  if (color_video_stream_)
+  if ( color_video_stream_->isValid() )
   {
     openni::CameraSettings* camera_seeting = color_video_stream_->getCameraSettings ();
     if (camera_seeting)
@@ -837,4 +861,21 @@ void
 pcl::io::openni2::OpenNI2Device::setIRCallback (StreamCallbackFunction ir_callback)
 {
   ir_frame_listener->setCallback (ir_callback);
+}
+
+void
+pcl::io::openni2::OpenNI2Device::setAutomaticFrameEvents( bool enableTriggering )
+{
+  if (enableTriggering)
+  {
+    color_video_stream_->addNewFrameListener ( color_frame_listener.get () );
+    depth_video_stream_->addNewFrameListener ( depth_frame_listener.get () );
+    ir_video_stream_->addNewFrameListener ( ir_frame_listener.get () );
+  }
+  else
+  {
+    color_video_stream_->removeNewFrameListener ( color_frame_listener.get () );
+    depth_video_stream_->removeNewFrameListener ( depth_frame_listener.get () );
+    ir_video_stream_->removeNewFrameListener ( ir_frame_listener.get () );
+  }
 }
