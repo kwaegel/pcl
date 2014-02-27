@@ -589,7 +589,7 @@ pcl::gpu::KinfuTracker::trackFrame (const DepthMap& depth_raw, Eigen::Affine3f* 
 }
 
 void
-pcl::gpu::KinfuTracker::integrateFrame (const DepthMap& depth_raw, Eigen::Affine3f* pose)
+pcl::gpu::KinfuTracker::integrateFrame (const DepthMap& depth_raw, Eigen::Affine3f* forcedPose)
 {
   device::Intr intr (fx_, fy_, cx_, cy_);
 
@@ -608,6 +608,15 @@ pcl::gpu::KinfuTracker::integrateFrame (const DepthMap& depth_raw, Eigen::Affine
 
   if (disable_icp_)
     integrate = true;
+
+  ///////////////////////////////////////////////////////////////////////////////////////////
+  // Chcek for forced pose
+  if (forcedPose)
+  {
+    integrate = true;
+    Rcurr = forcedPose->linear();
+    tcurr = forcedPose->translation();
+  }
 
   ///////////////////////////////////////////////////////////////////////////////////////////
   // Volume integration
