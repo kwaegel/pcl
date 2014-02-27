@@ -47,7 +47,7 @@ pcl::io::IOException::IOException (const std::string& function_name, const std::
   message_long_ = sstream.str ();
 }
 
-pcl::io::IOException::~IOException ()
+pcl::io::IOException::~IOException () throw ()
 {
 }
 
@@ -59,7 +59,7 @@ pcl::io::IOException::operator = (const IOException& exception)
 }
 
 const char*
-pcl::io::IOException::what () const
+pcl::io::IOException::what () const throw ()
 {
   return (message_long_.c_str ());
 }
