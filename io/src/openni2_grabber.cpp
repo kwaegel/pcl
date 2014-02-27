@@ -905,7 +905,7 @@ void pcl::io::OpenNI2Grabber::processColorFrame (openni::VideoStream& stream)
   FrameWrapper::Ptr frameWrapper = boost::make_shared<Openni2FrameWrapper>(frame);
 
   openni::PixelFormat format = frame.getVideoMode ().getPixelFormat ();
-  boost::shared_ptr<Image> image (nullptr);
+  boost::shared_ptr<Image> image (NULL);
 
   // Convert frame to PCL image type, based on pixel format
   if (format == openni::PIXEL_FORMAT_YUV422)
@@ -913,7 +913,7 @@ void pcl::io::OpenNI2Grabber::processColorFrame (openni::VideoStream& stream)
   else //if (format == PixelFormat::PIXEL_FORMAT_RGB888)
     image = boost::make_shared<ImageRGB24> (frameWrapper, t_callback);
 
-  imageCallback (image, nullptr);
+  imageCallback (image, NULL);
 }
 
 
@@ -935,7 +935,7 @@ void pcl::io::OpenNI2Grabber::processDepthFrame (openni::VideoStream& stream)
   boost::shared_ptr<DepthImage> image  = 
    boost::make_shared<DepthImage> (frameWrapper, baseline, focalLength, shadow_value, no_sample_value);
 
-  depthCallback (image, nullptr);
+  depthCallback (image, NULL);
 }
 
 
@@ -949,7 +949,7 @@ void pcl::io::OpenNI2Grabber::processIRFrame (openni::VideoStream& stream)
 
   boost::shared_ptr<IRImage> image = boost::make_shared<IRImage> ( frameWrapper );
 
-  irCallback (image, nullptr);
+  irCallback (image, NULL);
 }
 
 #endif // HAVE_OPENNI2
