@@ -188,6 +188,14 @@ namespace pcl
           float
           getDepthFocalLength (int output_y_resolution) const;
 
+          // Baseline between sensors. Returns 0 if this value does not exist.
+          float
+          getBaseline();
+
+          // Value of pixels in shadow or that have no valid measurement
+          uint64_t
+          getShadowValue();
+
           void
           setAutoExposure (bool enable);
           void

@@ -199,6 +199,18 @@ pcl::io::openni2::OpenNI2Device::getDepthFocalLength (int output_x_resolution) c
   return (calculatedFocalLengthX);
 }
 
+float
+pcl::io::openni2::OpenNI2Device::getBaseline()
+{
+  return (baseline_);
+}
+
+uint64_t
+pcl::io::openni2::OpenNI2Device::getShadowValue()
+{
+  return (shadow_value_);
+}
+
 bool
 pcl::io::openni2::OpenNI2Device::isIRVideoModeSupported (const OpenNI2VideoMode& video_mode) const
 {
