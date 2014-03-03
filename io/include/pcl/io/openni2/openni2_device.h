@@ -86,12 +86,16 @@ namespace pcl
 
           const std::string
           getUri () const;
+
           const std::string
           getVendor () const;
+
           const std::string
           getName () const;
+
           uint16_t
           getUsbVendorId () const;
+
           uint16_t
           getUsbProductId () const;
 
@@ -114,6 +118,10 @@ namespace pcl
           startColorStream ();
           void
           startDepthStream ();
+
+          // Trigger a single frame from each stream. Images will be returned using the callback framework.
+          void
+          triggerSingleFrame();
 
           void
           stopAllStreams ();
@@ -140,18 +148,24 @@ namespace pcl
           isDepthRegistered () const;
 
           const OpenNI2VideoMode
-          getIRVideoMode ();
+          getIRVideoMode () const;
+
           const OpenNI2VideoMode
-          getColorVideoMode ();
+          getColorVideoMode () const;
+
           const OpenNI2VideoMode
-          getDepthVideoMode ();
+          getDepthVideoMode () const;
+
 
           const std::vector<OpenNI2VideoMode>&
           getSupportedIRVideoModes () const;
+
           const std::vector<OpenNI2VideoMode>&
           getSupportedColorVideoModes () const;
+
           const std::vector<OpenNI2VideoMode>&
           getSupportedDepthVideoModes () const;
+
 
           bool
           isIRVideoModeSupported (const OpenNI2VideoMode& video_mode) const;
@@ -242,25 +256,9 @@ namespace pcl
         protected:
           void shutdown ();
 
-          boost::shared_ptr<openni::VideoStream>
-          getIRVideoStream () const;
-          boost::shared_ptr<openni::VideoStream>
-          getColorVideoStream () const;
-          boost::shared_ptr<openni::VideoStream>
-          getDepthVideoStream () const;
-
-
-          void
-          processColorFrame (openni::VideoStream& stream);
-          void
-          processDepthFrame (openni::VideoStream& stream);
-          void
-          processIRFrame (openni::VideoStream& stream);
-
-
           bool
           findCompatibleVideoMode (const std::vector<OpenNI2VideoMode> supportedModes,
-            const OpenNI2VideoMode& output_mode, OpenNI2VideoMode& mode) const;
+                                   const OpenNI2VideoMode& output_mode, OpenNI2VideoMode& mode) const;
 
           bool
           resizingSupported (size_t input_width, size_t input_height, size_t output_width, size_t output_height) const;
@@ -274,6 +272,7 @@ namespace pcl
           boost::shared_ptr<OpenNI2FrameListener> color_frame_listener;
           boost::shared_ptr<OpenNI2FrameListener> depth_frame_listener;
 
+          // 'mutable' allows modification in const functions
           mutable boost::shared_ptr<openni::VideoStream> ir_video_stream_;
           mutable boost::shared_ptr<openni::VideoStream> color_video_stream_;
           mutable boost::shared_ptr<openni::VideoStream> depth_video_stream_;
