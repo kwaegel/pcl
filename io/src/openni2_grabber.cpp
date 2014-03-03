@@ -905,7 +905,7 @@ void pcl::io::OpenNI2Grabber::processColorFrame (openni::VideoStream& stream)
   FrameWrapper::Ptr frameWrapper = boost::make_shared<Openni2FrameWrapper>(frame);
 
   openni::PixelFormat format = frame.getVideoMode ().getPixelFormat ();
-  boost::shared_ptr<Image> image (NULL);
+  boost::shared_ptr<Image> image;
 
   // Convert frame to PCL image type, based on pixel format
   if (format == openni::PIXEL_FORMAT_YUV422)

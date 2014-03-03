@@ -113,4 +113,4 @@ namespace pcl
 }
 #endif // HAVE_OPENNI2
 
-#endif PCL_IO_OPENNI2_METADATA_WRAPPER_H_
+#endif // PCL_IO_OPENNI2_METADATA_WRAPPER_H_
