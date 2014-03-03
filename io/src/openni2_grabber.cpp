@@ -406,7 +406,7 @@ pcl::io::OpenNI2Grabber::startSynchronization ()
   }
   catch (const IOException& exception)
   {
-    PCL_THROW_EXCEPTION (pcl::IOException, "Could not start synchronization " << exception.what ());
+    std::cerr << exception.what() << std::endl;
   }
 }
 
