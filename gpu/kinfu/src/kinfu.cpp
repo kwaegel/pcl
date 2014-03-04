@@ -277,6 +277,7 @@ pcl::gpu::KinfuTracker::operator() (const DepthMap& depth_raw,
           device::tranformMaps (vmaps_curr_[i], nmaps_curr_[i], device_Rcam, device_tcam, vmaps_g_prev_[i], nmaps_g_prev_[i]);
 
         ++global_time_;
+
         return (false);
       }
 
@@ -434,7 +435,7 @@ pcl::gpu::KinfuTracker::operator() (const DepthMap& depth_raw,
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool
-pcl::gpu::KinfuTracker::trackFrame (const DepthMap& depth_raw, Eigen::Affine3f* hint)
+pcl::gpu::KinfuTracker::trackFrame (const DepthMap& depth_raw,  Eigen::Affine3f& poseOut, Eigen::Affine3f* hint)
 {
     device::Intr intr (fx_, fy_, cx_, cy_);
 
@@ -480,7 +481,10 @@ pcl::gpu::KinfuTracker::trackFrame (const DepthMap& depth_raw, Eigen::Affine3f* 
           device::tranformMaps (vmaps_curr_[i], nmaps_curr_[i], device_Rcam, device_tcam, vmaps_g_prev_[i], nmaps_g_prev_[i]);
 
         ++global_time_;
-        return (false);
+
+        poseOut.linear() = init_Rcam;
+        poseOut.translation() = init_tcam;
+        return (true);    // Tracking is true by default, since it was the first frame
       }
 
       ///////////////////////////////////////////////////////////////////////////////////////////
@@ -570,8 +574,10 @@ pcl::gpu::KinfuTracker::trackFrame (const DepthMap& depth_raw, Eigen::Affine3f* 
         }
       }
       //save tranform
-      rmats_.push_back (Rcurr);
-      tvecs_.push_back (tcurr);
+      //rmats_.push_back (Rcurr);
+      //tvecs_.push_back (tcurr);
+      poseOut.linear() = Rcurr;
+      poseOut.translation() = tcurr;
   } 
   else /* if (disable_icp_) */
   {
@@ -589,9 +595,13 @@ pcl::gpu::KinfuTracker::trackFrame (const DepthMap& depth_raw, Eigen::Affine3f* 
 }
 
 void
-pcl::gpu::KinfuTracker::integrateFrame (const DepthMap& depth_raw, Eigen::Affine3f* forcedPose)
+pcl::gpu::KinfuTracker::integrateFrame (const DepthMap& depth_raw, Eigen::Affine3f pose)
 {
   device::Intr intr (fx_, fy_, cx_, cy_);
+
+  // Get previous pose
+  rmats_.push_back (pose.rotation().matrix());
+  tvecs_.push_back (pose.translation().matrix());
 
   Matrix3frm Rprev = rmats_[global_time_ - 1];
   Vector3f   tprev = tvecs_[global_time_ - 1];
@@ -608,15 +618,6 @@ pcl::gpu::KinfuTracker::integrateFrame (const DepthMap& depth_raw, Eigen::Affine
 
   if (disable_icp_)
     integrate = true;
-
-  ///////////////////////////////////////////////////////////////////////////////////////////
-  // Chcek for forced pose
-  if (forcedPose)
-  {
-    integrate = true;
-    Rcurr = forcedPose->linear();
-    tcurr = forcedPose->translation();
-  }
 
   ///////////////////////////////////////////////////////////////////////////////////////////
   // Volume integration
