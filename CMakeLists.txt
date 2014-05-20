@@ -156,6 +156,26 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   SET(CLANG_LIBRARIES "stdc++")
 endif()
 
+# ---[ Enable C++11 if available
+set(HAVE_CPP11 FALSE)
+include(CheckCXXCompilerFlag)
+CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
+CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
+if(COMPILER_SUPPORTS_CXX11)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+  SET(HAVE_CPP11 TRUE)
+elseif(COMPILER_SUPPORTS_CXX0X)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+  SET(HAVE_CPP11 TRUE)
+elseif(MSVC AND NOT (MSVC_VERSION LESS 1600) ) # VS2010 or newer
+  SET(HAVE_CPP11 TRUE)
+else()
+  MESSAGE(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support.")
+endif()
+if(HAVE_CPP11)
+  MESSAGE(STATUS "C++11 support enabled.")
+endif()
+
 # ---[ Project folders
 option(USE_PROJECT_FOLDERS "Use folders to organize PCL projects in an IDE." OFF)
 mark_as_advanced(USE_PROJECT_FOLDERS)
