@@ -43,7 +43,13 @@
 #endif
 
 #include <pcl/io/openni_camera/openni_device_oni.h>
-#include <pcl/io/openni_camera/openni_image_rgb24.h>
+//#include <pcl/io/openni_camera/openni_image_rgb24.h>
+#include <pcl/io/openni_camera/openni_metadata_wrapper.h>
+#include <pcl/io/image_rgb24.h>
+#include <boost/make_shared.hpp>
+
+using pcl::io::Image;
+using pcl::io::ImageRGB24;
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 openni_wrapper::DeviceONI::DeviceONI (
@@ -246,17 +252,18 @@ openni_wrapper::DeviceONI::NewONIIRDataAvailable (xn::ProductionNode&, void* coo
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-boost::shared_ptr<openni_wrapper::Image> 
+boost::shared_ptr<pcl::io::Image> 
 openni_wrapper::DeviceONI::getCurrentImage(boost::shared_ptr<xn::ImageMetaData> image_meta_data) const throw ()
 {
-  return (boost::shared_ptr<openni_wrapper::Image> (new openni_wrapper::ImageRGB24 (image_meta_data)));
+boost::shared_ptr<pcl::io::FrameWrapper> imageWrapper  = boost::make_shared<openni_wrapper::OpenniFrameWrapper>(image_meta_data);
+  return (boost::shared_ptr<pcl::io::Image> (new pcl::io::ImageRGB24 (imageWrapper)));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool 
 openni_wrapper::DeviceONI::isImageResizeSupported(unsigned input_width, unsigned input_height, unsigned output_width, unsigned output_height) const throw ()
 {
-  return (openni_wrapper::ImageRGB24::resizingSupported (input_width, input_height, output_width, output_height));
+  return (Image::isResizingSupported (input_width, input_height, output_width, output_height));
 }
 
 #endif //HAVE_OPENNI

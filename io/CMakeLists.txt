@@ -20,6 +20,7 @@ if(build)
     include/pcl/io/image_yuv422.h
     include/pcl/io/image_ir.h
     include/pcl/io/image_depth.h
+	include/pcl/io/image_bayerGRGB.h
     include/pcl/io/io_exception.h
   )
 
@@ -28,6 +29,7 @@ if(build)
     src/image_yuv422.cpp
     src/image_ir.cpp
     src/image_depth.cpp
+	src/image_bayerGRGB.cpp
     src/io_exception.cpp
   )
 
@@ -90,7 +92,6 @@ if(build)
         set(OPENNI_INCLUDES
             include/pcl/io/openni_camera/openni_shift_to_depth_conversion.h
             include/pcl/io/openni_camera/openni.h
-            include/pcl/io/openni_camera/openni_depth_image.h
             include/pcl/io/openni_camera/openni_device.h
             include/pcl/io/openni_camera/openni_device_kinect.h
             include/pcl/io/openni_camera/openni_device_primesense.h
@@ -98,26 +99,30 @@ if(build)
             include/pcl/io/openni_camera/openni_device_oni.h
             include/pcl/io/openni_camera/openni_driver.h
             include/pcl/io/openni_camera/openni_exception.h
-            include/pcl/io/openni_camera/openni_image.h
-            include/pcl/io/openni_camera/openni_image_bayer_grbg.h
-            include/pcl/io/openni_camera/openni_image_yuv_422.h
-            include/pcl/io/openni_camera/openni_image_rgb24.h
-            include/pcl/io/openni_camera/openni_ir_image.h
+            
+            include/pcl/io/openni_camera/openni_metadata_wrapper.h
+			#include/pcl/io/openni_camera/openni_image.h
+            #include/pcl/io/openni_camera/openni_depth_image.h
+            #include/pcl/io/openni_camera/openni_image_bayer_grbg.h
+            #include/pcl/io/openni_camera/openni_image_yuv_422.h
+            #include/pcl/io/openni_camera/openni_image_rgb24.h
+            #include/pcl/io/openni_camera/openni_ir_image.h
            ${IMAGE_INCLUDES}
         )
         set(OPENNI_GRABBER_SOURCES
             src/openni_camera/openni_device.cpp
             src/openni_camera/openni_device_primesense.cpp
-            src/openni_camera/openni_image_bayer_grbg.cpp
-            src/openni_camera/openni_depth_image.cpp
-            src/openni_camera/openni_ir_image.cpp
             src/openni_camera/openni_device_kinect.cpp
             src/openni_camera/openni_device_xtion.cpp
             src/openni_camera/openni_device_oni.cpp
             src/openni_camera/openni_driver.cpp
             src/openni_camera/openni_exception.cpp
-            src/openni_camera/openni_image_yuv_422.cpp
-            src/openni_camera/openni_image_rgb24.cpp
+			
+			#src/openni_camera/openni_depth_image.cpp
+            #src/openni_camera/openni_image_bayer_grbg.cpp
+            #src/openni_camera/openni_image_yuv_422.cpp
+			#src/openni_camera/openni_image_rgb24.cpp
+            #src/openni_camera/openni_ir_image.cpp
             src/openni_grabber.cpp
             src/oni_grabber.cpp
             ${IMAGE_SOURCES}

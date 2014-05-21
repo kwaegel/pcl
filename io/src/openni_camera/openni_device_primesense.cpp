@@ -43,10 +43,16 @@
 #endif
 
 #include <pcl/io/openni_camera/openni_device_primesense.h>
-#include <pcl/io/openni_camera/openni_image_yuv_422.h>
+//#include <pcl/io/openni_camera/openni_image_yuv_422.h>
+#include <pcl/io/openni_camera/openni_metadata_wrapper.h>
+#include <pcl/io/image_yuv422.h>
+#include <boost/make_shared.hpp>
+
 #include <iostream>
 #include <sstream>
 #include <pcl/io/boost.h>
+
+using pcl::io::ImageYUV422;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 openni_wrapper::DevicePrimesense::DevicePrimesense (
@@ -102,7 +108,7 @@ openni_wrapper::DevicePrimesense::isImageResizeSupported (
     unsigned output_width, 
     unsigned output_height) const throw ()
 {
-  return (ImageYUV422::resizingSupported (input_width, input_height, output_width, output_height));
+  return (pcl::io::Image::isResizingSupported (input_width, input_height, output_width, output_height));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -167,10 +173,11 @@ openni_wrapper::DevicePrimesense::enumAvailableModes () throw ()
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-boost::shared_ptr<openni_wrapper::Image> 
+boost::shared_ptr<pcl::io::Image> 
 openni_wrapper::DevicePrimesense::getCurrentImage (boost::shared_ptr<xn::ImageMetaData> image_data) const throw ()
 {
-  return (boost::shared_ptr<openni_wrapper::Image> (new ImageYUV422 (image_data)));
+  boost::shared_ptr<pcl::io::FrameWrapper> imageWrapper  = boost::make_shared<openni_wrapper::OpenniFrameWrapper>(image_data);
+  return (boost::shared_ptr<pcl::io::Image> (new ImageYUV422 (imageWrapper)));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

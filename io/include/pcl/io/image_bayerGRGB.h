@@ -1,7 +1,9 @@
 /*
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2011 Willow Garage, Inc.
+ *  Point Cloud Library (PCL) - www.pointclouds.org
+ *  Copyright (c) 2011, Willow Garage, Inc.
+ *  Copyright (c) 2012-, Open Perception, Inc.
  *
  *  All rights reserved.
  *
@@ -36,44 +38,62 @@
 #include <pcl/pcl_config.h>
 #ifdef HAVE_OPENNI
 
-#ifndef __OPENNI_IMAGE_YUV422__
-#define __OPENNI_IMAGE_YUV422__
+#ifndef __OPENNI_IMAGE_BAYER_GRBG__
+#define __OPENNI_IMAGE_BAYER_GRBG__
 #include <pcl/pcl_macros.h>
-#include "openni_image.h"
+//#include "openni_image.h"
+#include <pcl/io/image.h>
 
-namespace openni_wrapper
+namespace pcl
 {
-
-  /**
-   * @brief Concrete implementation of the interface Image for a YUV 422 image used by Primesense devices.
-   * @author Suat Gedikli
-   * @date 02.january 2011
-   * @ingroup io
-   */
-  class PCL_EXPORTS ImageYUV422 : public Image
+  namespace io
   {
-  public:
-    ImageYUV422 (boost::shared_ptr<xn::ImageMetaData> image_meta_data) throw ();
-    virtual ~ImageYUV422 () throw ();
-
-    inline virtual Encoding
-    getEncoding () const
+    /** \brief This class provides methods to fill a RGB or Grayscale image buffer from underlying Bayer pattern image.
+      * \author Suat Gedikli <gedikli@willowgarage.com>
+      * \ingroup io
+      */
+    class PCL_EXPORTS ImageBayerGRBG : public Image
     {
-      return (YUV422);
+      public:
+        typedef enum
+        {
+          Bilinear = 0,
+          EdgeAware,
+          EdgeAwareWeighted
+        } DebayeringMethod;
+
+        ImageBayerGRBG (FrameWrapper::Ptr image_metadata, DebayeringMethod method) throw ();
+        virtual ~ImageBayerGRBG () throw ();
+
+        inline virtual Encoding
+        getEncoding () const
+        {
+          return (BAYER_GRBG);
+        }
+
+        virtual void fillRGB (unsigned width, unsigned height, unsigned char* rgb_buffer, unsigned rgb_line_step = 0) const;
+        virtual void fillGrayscale (unsigned width, unsigned height, unsigned char* gray_buffer, unsigned gray_line_step = 0) const;
+        inline void setDebayeringMethod (const DebayeringMethod& method) throw ();
+        inline DebayeringMethod getDebayeringMethod () const throw ();
+
+
+      protected:
+        DebayeringMethod debayering_method_;
+    };
+
+    void
+    ImageBayerGRBG::setDebayeringMethod (const ImageBayerGRBG::DebayeringMethod& method) throw ()
+    {
+      debayering_method_ = method;
     }
 
-    virtual bool isResizingSupported (unsigned input_width, unsigned input_height, unsigned output_width, unsigned output_height) const;
-    virtual void fillRGB (unsigned width, unsigned height, unsigned char* rgb_buffer, unsigned rgb_line_step = 0) const;
-    virtual void fillGrayscale (unsigned width, unsigned height, unsigned char* gray_buffer, unsigned gray_line_step = 0) const;
-    inline static bool resizingSupported (unsigned input_width, unsigned input_height, unsigned output_width, unsigned output_height);
-  } ;
-
-  bool
-  ImageYUV422::resizingSupported (unsigned input_width, unsigned input_height, unsigned output_width, unsigned output_height)
-  {
-    return (output_width <= input_width && output_height <= input_height && input_width % output_width == 0 && input_height % output_height == 0);
-  }
-} // namespace
+    ImageBayerGRBG::DebayeringMethod
+    ImageBayerGRBG::getDebayeringMethod () const throw ()
+    {
+      return debayering_method_;
+    }
+  } // namespace
+}
 
 #endif
 #endif // __OPENNI_IMAGE__

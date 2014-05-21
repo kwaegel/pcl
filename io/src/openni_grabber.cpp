@@ -48,6 +48,9 @@
 #include <pcl/exceptions.h>
 #include <iostream>
 
+using pcl::io::Image;
+using pcl::io::ImageBayerGRBG;
+
 namespace pcl
 {
   typedef union
@@ -116,7 +119,7 @@ pcl::OpenNIGrabber::OpenNIGrabber (const std::string& device_id, const Mode& dep
     rgb_sync_.addCallback (boost::bind (&OpenNIGrabber::imageDepthImageCallback, this, _1, _2));
     openni_wrapper::DeviceKinect* kinect = dynamic_cast<openni_wrapper::DeviceKinect*> (device_.get ());
     if (kinect)
-      kinect->setDebayeringMethod (openni_wrapper::ImageBayerGRBG::EdgeAware);
+      kinect->setDebayeringMethod (pcl::io::ImageBayerGRBG::EdgeAware);
   }
 
   image_callback_handle = device_->registerImageCallback (&OpenNIGrabber::imageCallback, *this);
@@ -460,12 +463,12 @@ pcl::OpenNIGrabber::stopSynchronization ()
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void
-pcl::OpenNIGrabber::imageCallback (boost::shared_ptr<openni_wrapper::Image> image, void*)
+pcl::OpenNIGrabber::imageCallback (boost::shared_ptr<pcl::io::Image> image, void*)
 {
   if (num_slots<sig_cb_openni_point_cloud_rgb>   () > 0 ||
       num_slots<sig_cb_openni_point_cloud_rgba>  () > 0 ||
       num_slots<sig_cb_openni_image_depth_image> () > 0)
-    rgb_sync_.add0 (image, image->getTimeStamp ());
+    rgb_sync_.add0 (image, image->getTimestamp ());
 
   if (image_signal_->num_slots () > 0)
     image_signal_->operator()(image);
@@ -473,16 +476,16 @@ pcl::OpenNIGrabber::imageCallback (boost::shared_ptr<openni_wrapper::Image> imag
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void
-pcl::OpenNIGrabber::depthCallback (boost::shared_ptr<openni_wrapper::DepthImage> depth_image, void*)
+pcl::OpenNIGrabber::depthCallback (boost::shared_ptr<pcl::io::DepthImage> depth_image, void*)
 {
   if (num_slots<sig_cb_openni_point_cloud_rgb>   () > 0 ||
       num_slots<sig_cb_openni_point_cloud_rgba>  () > 0 ||
       num_slots<sig_cb_openni_image_depth_image> () > 0)
-    rgb_sync_.add1 (depth_image, depth_image->getTimeStamp ());
+    rgb_sync_.add1 (depth_image, depth_image->getTimestamp ());
 
   if (num_slots<sig_cb_openni_point_cloud_i>  () > 0 ||
       num_slots<sig_cb_openni_ir_depth_image> () > 0)
-    ir_sync_.add1 (depth_image, depth_image->getTimeStamp ());
+    ir_sync_.add1 (depth_image, depth_image->getTimestamp ());
 
   if (depth_image_signal_->num_slots () > 0)
     depth_image_signal_->operator()(depth_image);
@@ -493,11 +496,11 @@ pcl::OpenNIGrabber::depthCallback (boost::shared_ptr<openni_wrapper::DepthImage>
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void
-pcl::OpenNIGrabber::irCallback (boost::shared_ptr<openni_wrapper::IRImage> ir_image, void*)
+pcl::OpenNIGrabber::irCallback (boost::shared_ptr<pcl::io::IRImage> ir_image, void*)
 {
   if (num_slots<sig_cb_openni_point_cloud_i>  () > 0 ||
       num_slots<sig_cb_openni_ir_depth_image> () > 0)
-    ir_sync_.add0(ir_image, ir_image->getTimeStamp ());
+    ir_sync_.add0(ir_image, ir_image->getTimestamp ());
 
   if (ir_image_signal_->num_slots () > 0)
     ir_image_signal_->operator()(ir_image);
@@ -505,8 +508,8 @@ pcl::OpenNIGrabber::irCallback (boost::shared_ptr<openni_wrapper::IRImage> ir_im
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void
-pcl::OpenNIGrabber::imageDepthImageCallback (const boost::shared_ptr<openni_wrapper::Image> &image,
-                                             const boost::shared_ptr<openni_wrapper::DepthImage> &depth_image)
+pcl::OpenNIGrabber::imageDepthImageCallback (const boost::shared_ptr<pcl::io::Image> &image,
+                                             const boost::shared_ptr<pcl::io::DepthImage> &depth_image)
 {
   // check if we have color point cloud slots
   if (point_cloud_rgb_signal_->num_slots () > 0)
@@ -527,8 +530,8 @@ pcl::OpenNIGrabber::imageDepthImageCallback (const boost::shared_ptr<openni_wrap
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void
-pcl::OpenNIGrabber::irDepthImageCallback (const boost::shared_ptr<openni_wrapper::IRImage> &ir_image,
-                                          const boost::shared_ptr<openni_wrapper::DepthImage> &depth_image)
+pcl::OpenNIGrabber::irDepthImageCallback (const boost::shared_ptr<pcl::io::IRImage> &ir_image,
+                                          const boost::shared_ptr<pcl::io::DepthImage> &depth_image)
 {
   // check if we have color point cloud slots
   if (point_cloud_i_signal_->num_slots () > 0)
@@ -543,7 +546,7 @@ pcl::OpenNIGrabber::irDepthImageCallback (const boost::shared_ptr<openni_wrapper
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 pcl::PointCloud<pcl::PointXYZ>::Ptr
-pcl::OpenNIGrabber::convertToXYZPointCloud (const boost::shared_ptr<openni_wrapper::DepthImage>& depth_image) const
+pcl::OpenNIGrabber::convertToXYZPointCloud (const boost::shared_ptr<pcl::io::DepthImage>& depth_image) const
 {
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud <pcl::PointXYZ>);
 
@@ -579,7 +582,7 @@ pcl::OpenNIGrabber::convertToXYZPointCloud (const boost::shared_ptr<openni_wrapp
   float bad_point = std::numeric_limits<float>::quiet_NaN ();
 
   // we have to use Data, since operator[] uses assert -> Debug-mode very slow!
-  register const unsigned short* depth_map = depth_image->getDepthMetaData ().Data ();
+  register const unsigned short* depth_map = depth_image->getData ();
   if (depth_image->getWidth() != depth_width_ || depth_image->getHeight () != depth_height_)
   {
     static unsigned buffer_size = 0;
@@ -624,8 +627,8 @@ pcl::OpenNIGrabber::convertToXYZPointCloud (const boost::shared_ptr<openni_wrapp
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointT> typename pcl::PointCloud<PointT>::Ptr
-pcl::OpenNIGrabber::convertToXYZRGBPointCloud (const boost::shared_ptr<openni_wrapper::Image> &image,
-                                               const boost::shared_ptr<openni_wrapper::DepthImage> &depth_image) const
+pcl::OpenNIGrabber::convertToXYZRGBPointCloud (const boost::shared_ptr<pcl::io::Image> &image,
+                                               const boost::shared_ptr<pcl::io::DepthImage> &depth_image) const
 {
   static unsigned rgb_array_size = 0;
   static boost::shared_array<unsigned char> rgb_array ((unsigned char*)(NULL));
@@ -658,7 +661,7 @@ pcl::OpenNIGrabber::convertToXYZRGBPointCloud (const boost::shared_ptr<openni_wr
   if (pcl_isfinite (rgb_principal_point_y_))
     centerY =  static_cast<float> (rgb_principal_point_y_);
 
-  register const XnDepthPixel* depth_map = depth_image->getDepthMetaData ().Data ();
+  register const XnDepthPixel* depth_map = depth_image->getData ();
   if (depth_image->getWidth () != depth_width_ || depth_image->getHeight() != depth_height_)
   {
     static unsigned buffer_size = 0;
@@ -755,8 +758,8 @@ pcl::OpenNIGrabber::convertToXYZRGBPointCloud (const boost::shared_ptr<openni_wr
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 pcl::PointCloud<pcl::PointXYZI>::Ptr
-pcl::OpenNIGrabber::convertToXYZIPointCloud (const boost::shared_ptr<openni_wrapper::IRImage> &ir_image,
-                                             const boost::shared_ptr<openni_wrapper::DepthImage> &depth_image) const
+pcl::OpenNIGrabber::convertToXYZIPointCloud (const boost::shared_ptr<pcl::io::IRImage> &ir_image,
+                                             const boost::shared_ptr<pcl::io::DepthImage> &depth_image) const
 {
   boost::shared_ptr<pcl::PointCloud<pcl::PointXYZI> > cloud (new pcl::PointCloud<pcl::PointXYZI > ());
 
@@ -785,8 +788,8 @@ pcl::OpenNIGrabber::convertToXYZIPointCloud (const boost::shared_ptr<openni_wrap
   if (pcl_isfinite (rgb_principal_point_y_))
     centerY = static_cast<float>(rgb_principal_point_y_);
 
-  register const XnDepthPixel* depth_map = depth_image->getDepthMetaData ().Data ();
-  register const XnIRPixel* ir_map = ir_image->getMetaData ().Data ();
+  register const XnDepthPixel* depth_map = depth_image->getData ();
+  register const XnIRPixel* ir_map = ir_image->getData ();
 
   if (depth_image->getWidth () != depth_width_ || depth_image->getHeight () != depth_height_)
   {

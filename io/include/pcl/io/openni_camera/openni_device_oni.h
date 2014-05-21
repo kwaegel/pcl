@@ -90,7 +90,7 @@ namespace openni_wrapper
     }
 
   protected:
-    virtual boost::shared_ptr<Image> getCurrentImage (boost::shared_ptr<xn::ImageMetaData> image_meta_data) const throw ();
+    virtual boost::shared_ptr<pcl::io::Image> getCurrentImage (boost::shared_ptr<xn::ImageMetaData> image_meta_data) const throw ();
 
     void PlayerThreadFunction ();
     static void __stdcall NewONIDepthDataAvailable (xn::ProductionNode& node, void* cookie) throw ();

@@ -46,6 +46,11 @@
 #include <sstream>
 #include <pcl/io/boost.h>
 
+#include <pcl/io/openni_camera/openni_metadata_wrapper.h>
+#include <boost/make_shared.hpp>
+
+using pcl::io::Image;
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 openni_wrapper::DeviceXtionPro::DeviceXtionPro (xn::Context& context, const xn::NodeInfo& device_node, const xn::NodeInfo& depth_node, const xn::NodeInfo& ir_node)
 : OpenNIDevice (context, device_node, depth_node, ir_node)
@@ -112,10 +117,12 @@ openni_wrapper::DeviceXtionPro::enumAvailableModes () throw ()
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-boost::shared_ptr<openni_wrapper::Image> 
-openni_wrapper::DeviceXtionPro::getCurrentImage (boost::shared_ptr<xn::ImageMetaData>) const throw ()
+boost::shared_ptr<pcl::io::Image> 
+openni_wrapper::DeviceXtionPro::getCurrentImage (boost::shared_ptr<xn::ImageMetaData> image_meta_data) const throw ()
 {
-  return (boost::shared_ptr<Image> (reinterpret_cast<Image*> (0)));
+  boost::shared_ptr<pcl::io::FrameWrapper> imageWrapper  = boost::make_shared<openni_wrapper::OpenniFrameWrapper>(image_meta_data);
+  // Is YUV422 the correct image type to return?
+  return (boost::shared_ptr<pcl::io::Image> (new pcl::io::ImageYUV422 (imageWrapper)));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

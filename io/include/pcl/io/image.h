@@ -92,9 +92,11 @@ namespace pcl
         * @param[in] output_height height of desired output image
         * @return wheter the resizing is supported or not.
         */
-        virtual bool
-        isResizingSupported (unsigned input_width, unsigned input_height,
-          unsigned output_width, unsigned output_height) const = 0;
+        static bool
+        isResizingSupported (unsigned input_width, unsigned input_height, unsigned output_width, unsigned output_height)
+        {
+          return (output_width <= input_width && output_height <= input_height && input_width % output_width == 0 && input_height % output_height == 0 );
+        }
 
         /**
         * @brief fills a user given buffer with the RGB values, with an optional nearest-neighbor down sampling and an optional subregion
@@ -131,8 +133,7 @@ namespace pcl
         * @param[in] gray_line_step optional line step in bytes to allow the output in a rectangular subregion of the output buffer.
         */
         virtual void
-        fillGrayscale (unsigned width, unsigned height, unsigned char* gray_buffer,
-          unsigned gray_line_step = 0) const = 0;
+        fillGrayscale (unsigned width, unsigned height, unsigned char* gray_buffer, unsigned gray_line_step = 0) const = 0;
 
         /**
         * @return width of the image

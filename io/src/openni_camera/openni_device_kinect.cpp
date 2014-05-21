@@ -43,7 +43,11 @@
 #endif
 
 #include <pcl/io/openni_camera/openni_device_kinect.h>
+#include <pcl/io/openni_camera/openni_metadata_wrapper.h>
 #include <pcl/io/openni_camera/openni_image_bayer_grbg.h>
+#include <boost/make_shared.hpp>
+
+using pcl::io::ImageBayerGRBG;
 
 namespace openni_wrapper
 {
@@ -104,7 +108,7 @@ openni_wrapper::DeviceKinect::~DeviceKinect () throw ()
 bool 
 openni_wrapper::DeviceKinect::isImageResizeSupported (unsigned input_width, unsigned input_height, unsigned output_width, unsigned output_height) const throw ()
 {
-  return (ImageBayerGRBG::resizingSupported (input_width, input_height, output_width, output_height));
+  return (pcl::io::Image::isResizingSupported (input_width, input_height, output_width, output_height));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -128,10 +132,11 @@ openni_wrapper::DeviceKinect::enumAvailableModes () throw ()
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-boost::shared_ptr<openni_wrapper::Image> 
+boost::shared_ptr<pcl::io::Image> 
 openni_wrapper::DeviceKinect::getCurrentImage (boost::shared_ptr<xn::ImageMetaData> image_data) const throw ()
 {
-  return (boost::shared_ptr<Image> (new ImageBayerGRBG (image_data, debayering_method_)));
+  boost::shared_ptr<pcl::io::FrameWrapper> imageWrapper  = boost::make_shared<openni_wrapper::OpenniFrameWrapper>(image_data);
+  return (boost::shared_ptr<pcl::io::Image> (new ImageBayerGRBG (imageWrapper, debayering_method_)));
 }
 
 }//namespace

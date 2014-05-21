@@ -44,8 +44,14 @@
 
 #include <pcl/io/openni_camera/openni_driver.h>
 #include <pcl/io/openni_camera/openni_device.h>
-#include <pcl/io/openni_camera/openni_depth_image.h>
-#include <pcl/io/openni_camera/openni_ir_image.h>
+
+//#include <pcl/io/openni_camera/openni_depth_image.h>
+//#include <pcl/io/openni_camera/openni_ir_image.h>
+#include <pcl/io/openni_camera/openni_metadata_wrapper.h>
+#include <pcl/io/image_depth.h>
+#include <pcl/io/image_ir.h>
+#include <boost/make_shared.hpp>
+
 #include <iostream>
 #include <limits>
 #include <sstream>
@@ -879,7 +885,7 @@ openni_wrapper::OpenNIDevice::ImageDataThreadFunction ()
     image_data->CopyFrom (image_md);
     image_lock.unlock ();
     
-    boost::shared_ptr<Image> image = getCurrentImage (image_data);
+    boost::shared_ptr<pcl::io::Image> image = getCurrentImage (image_data);
     for (std::map< OpenNIDevice::CallbackHandle, ActualImageCallbackFunction >::iterator callbackIt = image_callback_.begin (); callbackIt != image_callback_.end (); ++callbackIt)
     {
       callbackIt->second.operator()(image);
@@ -908,7 +914,8 @@ openni_wrapper::OpenNIDevice::DepthDataThreadFunction ()
     depth_data->CopyFrom (depth_md);
     depth_lock.unlock ();
 
-    boost::shared_ptr<DepthImage> depth_image ( new DepthImage (depth_data, baseline_, getDepthFocalLength (), shadow_value_, no_sample_value_) );
+    boost::shared_ptr<pcl::io::FrameWrapper> depthWrapper  = boost::make_shared<openni_wrapper::OpenniDepthWrapper>(depth_data);
+    boost::shared_ptr<pcl::io::DepthImage> depth_image ( new pcl::io::DepthImage (depthWrapper, baseline_, getDepthFocalLength (), shadow_value_, no_sample_value_) );
 
     for (std::map< OpenNIDevice::CallbackHandle, ActualDepthImageCallbackFunction >::iterator callbackIt = depth_callback_.begin ();
          callbackIt != depth_callback_.end (); ++callbackIt)
@@ -939,7 +946,8 @@ openni_wrapper::OpenNIDevice::IRDataThreadFunction ()
     ir_data->CopyFrom (ir_md);
     ir_lock.unlock ();
 
-    boost::shared_ptr<IRImage> ir_image ( new IRImage (ir_data) );
+    boost::shared_ptr<pcl::io::FrameWrapper> ir_wrapper  = boost::make_shared<openni_wrapper::OpenniIRWrapper>(ir_data);
+    boost::shared_ptr<pcl::io::IRImage> ir_image ( new pcl::io::IRImage (ir_wrapper) );
 
     for (std::map< OpenNIDevice::CallbackHandle, ActualIRImageCallbackFunction >::iterator callbackIt = ir_callback_.begin ();
          callbackIt != ir_callback_.end (); ++callbackIt)

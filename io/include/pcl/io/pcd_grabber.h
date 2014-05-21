@@ -48,10 +48,13 @@
 #include <vector>
 #include <pcl/conversions.h>
 
+
 #ifdef HAVE_OPENNI
-#include <pcl/io/openni_camera/openni_image.h>
-#include <pcl/io/openni_camera/openni_image_rgb24.h>
-#include <pcl/io/openni_camera/openni_depth_image.h>
+  #include <boost/make_shared.hpp>
+  #include <pcl/io/openni_camera/openni_metadata_wrapper.h>
+  #include <pcl/io/image.h>
+  #include <pcl/io/image_rgb24.h>
+  #include <pcl/io/image_depth.h>
 #endif
 
 namespace pcl
@@ -177,9 +180,9 @@ namespace pcl
       boost::signals2::signal<void (const boost::shared_ptr<const pcl::PointCloud<PointT> >&)>* signal_;
 
 #ifdef HAVE_OPENNI
-      boost::signals2::signal<void (const boost::shared_ptr<openni_wrapper::DepthImage>&)>*     depth_image_signal_;
-      boost::signals2::signal<void (const boost::shared_ptr<openni_wrapper::Image>&)>*     image_signal_;
-      boost::signals2::signal<void (const boost::shared_ptr<openni_wrapper::Image>&, const boost::shared_ptr<openni_wrapper::DepthImage>&, float constant)>*     image_depth_image_signal_;
+      boost::signals2::signal<void (const boost::shared_ptr<pcl::io::DepthImage>&)>*     depth_image_signal_;
+      boost::signals2::signal<void (const boost::shared_ptr<pcl::io::Image>&)>*     image_signal_;
+      boost::signals2::signal<void (const boost::shared_ptr<pcl::io::Image>&, const boost::shared_ptr<pcl::io::DepthImage>&, float reciprocalFocalLength)>*     image_depth_image_signal_;
 #endif
   };
 
@@ -190,9 +193,9 @@ namespace pcl
   {
     signal_ = createSignal<void (const boost::shared_ptr<const pcl::PointCloud<PointT> >&)>();
 #ifdef HAVE_OPENNI
-    depth_image_signal_ = createSignal <void (const boost::shared_ptr<openni_wrapper::DepthImage>&)> ();
-    image_signal_ = createSignal <void (const boost::shared_ptr<openni_wrapper::Image>&)> ();
-    image_depth_image_signal_ = createSignal <void (const boost::shared_ptr<openni_wrapper::Image>&, const boost::shared_ptr<openni_wrapper::DepthImage>&, float constant)> ();
+    depth_image_signal_ = createSignal <void (const boost::shared_ptr<pcl::io::DepthImage>&)> ();
+    image_signal_ = createSignal <void (const boost::shared_ptr<pcl::io::Image>&)> ();
+    image_depth_image_signal_ = createSignal <void (const boost::shared_ptr<pcl::io::Image>&, const boost::shared_ptr<pcl::io::DepthImage>&, float reciprocalFocalLength)> ();
 #endif
   }
 
@@ -203,9 +206,9 @@ namespace pcl
   {
     signal_ = createSignal<void (const boost::shared_ptr<const pcl::PointCloud<PointT> >&)>();
 #ifdef HAVE_OPENNI
-    depth_image_signal_ = createSignal <void (const boost::shared_ptr<openni_wrapper::DepthImage>&)> ();
-    image_signal_ = createSignal <void (const boost::shared_ptr<openni_wrapper::Image>&)> ();
-    image_depth_image_signal_ = createSignal <void (const boost::shared_ptr<openni_wrapper::Image>&, const boost::shared_ptr<openni_wrapper::DepthImage>&, float constant)> ();
+    depth_image_signal_ = createSignal <void (const boost::shared_ptr<pcl::io::DepthImage>&)> ();
+    image_signal_ = createSignal <void (const boost::shared_ptr<pcl::io::Image>&)> ();
+    image_depth_image_signal_ = createSignal <void (const boost::shared_ptr<pcl::io::Image>&, const boost::shared_ptr<pcl::io::DepthImage>&, float reciprocalFocalLength)> ();
 #endif
   }
 
@@ -258,7 +261,9 @@ namespace pcl
         ++k;
       }
 
-    boost::shared_ptr<openni_wrapper::DepthImage> depth_image (new openni_wrapper::DepthImage (depth_meta_data, 0.075f, 525, 0, 0));
+    boost::shared_ptr<pcl::io::FrameWrapper> depthWrapper  = boost::make_shared<openni_wrapper::OpenniDepthWrapper>(depth_meta_data);
+    boost::shared_ptr<pcl::io::DepthImage> depth_image = boost::make_shared<pcl::io::DepthImage>(depthWrapper, 0.075f, 525, 0, 0);
+    
     if (depth_image_signal_->num_slots() > 0)
       depth_image_signal_->operator()(depth_image);
 
@@ -289,7 +294,8 @@ namespace pcl
         }
       }
 
-      boost::shared_ptr<openni_wrapper::Image> image (new openni_wrapper::ImageRGB24 (image_meta_data));
+      boost::shared_ptr<pcl::io::FrameWrapper> imageWrapper  = boost::make_shared<openni_wrapper::OpenniDepthWrapper>(depth_meta_data);
+      boost::shared_ptr<pcl::io::Image> image = boost::make_shared<pcl::io::ImageRGB24>(imageWrapper);
       if (image_signal_->num_slots() > 0)
         image_signal_->operator()(image);
       

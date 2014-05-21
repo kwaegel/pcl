@@ -42,7 +42,8 @@
 
 #include "openni_device.h"
 #include "openni_driver.h"
-#include "openni_image_bayer_grbg.h"
+//#include "openni_image_bayer_grbg.h"
+#include <pcl/io/image_bayerGRGB.h>
 
 namespace openni_wrapper
 {
@@ -60,25 +61,25 @@ namespace openni_wrapper
     DeviceKinect (xn::Context& context, const xn::NodeInfo& device_node, const xn::NodeInfo& image_node, const xn::NodeInfo& depth_node, const xn::NodeInfo& ir_node);
     virtual ~DeviceKinect () throw ();
 
-    inline void setDebayeringMethod (const ImageBayerGRBG::DebayeringMethod& debayering_method) throw ();
-    inline const ImageBayerGRBG::DebayeringMethod& getDebayeringMethod () const throw ();
+    inline void setDebayeringMethod (const pcl::io::ImageBayerGRBG::DebayeringMethod& debayering_method) throw ();
+    inline const pcl::io::ImageBayerGRBG::DebayeringMethod& getDebayeringMethod () const throw ();
 
     virtual bool isSynchronizationSupported () const throw ();
 
   protected:
-    virtual boost::shared_ptr<Image> getCurrentImage (boost::shared_ptr<xn::ImageMetaData> image_meta_data) const throw ();
+    virtual boost::shared_ptr<pcl::io::Image> getCurrentImage (boost::shared_ptr<xn::ImageMetaData> image_meta_data) const throw ();
     void enumAvailableModes () throw ();
     virtual bool isImageResizeSupported (unsigned input_width, unsigned input_height, unsigned output_width, unsigned output_height) const throw ();
-    ImageBayerGRBG::DebayeringMethod debayering_method_;
+    pcl::io::ImageBayerGRBG::DebayeringMethod debayering_method_;
   } ;
 
   void
-  DeviceKinect::setDebayeringMethod (const ImageBayerGRBG::DebayeringMethod& debayering_method) throw ()
+  DeviceKinect::setDebayeringMethod (const pcl::io::ImageBayerGRBG::DebayeringMethod& debayering_method) throw ()
   {
     debayering_method_ = debayering_method;
   }
 
-  const ImageBayerGRBG::DebayeringMethod&
+  const pcl::io::ImageBayerGRBG::DebayeringMethod&
   DeviceKinect::getDebayeringMethod () const throw ()
   {
     return debayering_method_;
