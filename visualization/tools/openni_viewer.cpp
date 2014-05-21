@@ -126,13 +126,13 @@ class OpenNIViewer
     }
 
     void
-    image_callback (const boost::shared_ptr<openni_wrapper::Image>& image)
+    image_callback (const boost::shared_ptr<pcl::io::Image>& image)
     {
       FPS_CALC ("image callback");
       boost::mutex::scoped_lock lock (image_mutex_);
       image_ = image;
       
-      if (image->getEncoding () != openni_wrapper::Image::RGB)
+      if (image->getEncoding () != pcl::io::Image::RGB)
       {
         if (rgb_data_size_ < image->getWidth () * image->getHeight ())
         {
@@ -179,12 +179,12 @@ class OpenNIViewer
       boost::signals2::connection cloud_connection = grabber_.registerCallback (cloud_cb);
       
       boost::signals2::connection image_connection;
-      if (grabber_.providesCallback<void (const boost::shared_ptr<openni_wrapper::Image>&)>())
+      if (grabber_.providesCallback<void (const boost::shared_ptr<pcl::io::Image>&)>())
       {
         image_viewer_.reset (new pcl::visualization::ImageViewer ("PCL OpenNI image"));
         image_viewer_->registerMouseCallback (&OpenNIViewer::mouse_callback, *this);
         image_viewer_->registerKeyboardCallback(&OpenNIViewer::keyboard_callback, *this);
-        boost::function<void (const boost::shared_ptr<openni_wrapper::Image>&) > image_cb = boost::bind (&OpenNIViewer::image_callback, this, _1);
+        boost::function<void (const boost::shared_ptr<pcl::io::Image>&) > image_cb = boost::bind (&OpenNIViewer::image_callback, this, _1);
         image_connection = grabber_.registerCallback (image_cb);
       }
       
@@ -194,7 +194,7 @@ class OpenNIViewer
 
       while (!cloud_viewer_->wasStopped () && (image_viewer_ && !image_viewer_->wasStopped ()))
       {
-        boost::shared_ptr<openni_wrapper::Image> image;
+        boost::shared_ptr<pcl::io::Image> image;
         CloudConstPtr cloud;
 
         cloud_viewer_->spinOnce ();
@@ -240,8 +240,8 @@ class OpenNIViewer
             image_init = !image_init;
           }
 
-          if (image->getEncoding() == openni_wrapper::Image::RGB)
-            image_viewer_->addRGBImage (image->getMetaData ().Data (), image->getWidth (), image->getHeight ());
+          if (image->getEncoding() == pcl::io::Image::RGB)
+            image_viewer_->addRGBImage ( (const unsigned char*) image->getData (), image->getWidth (), image->getHeight ());
           else
             image_viewer_->addRGBImage (rgb_data_, image->getWidth (), image->getHeight ());
           image_viewer_->spinOnce ();
@@ -265,7 +265,7 @@ class OpenNIViewer
     boost::mutex image_mutex_;
     
     CloudConstPtr cloud_;
-    boost::shared_ptr<openni_wrapper::Image> image_;
+    boost::shared_ptr<pcl::io::Image> image_;
     unsigned char* rgb_data_;
     unsigned rgb_data_size_;
 };

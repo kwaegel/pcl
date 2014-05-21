@@ -142,8 +142,8 @@ struct Frame
   typedef boost::shared_ptr<Frame> Ptr;
   typedef boost::shared_ptr<const Frame> ConstPtr;
 
-  Frame (const boost::shared_ptr<openni_wrapper::Image> &_image,
-         const boost::shared_ptr<openni_wrapper::DepthImage> &_depth_image,
+  Frame (const boost::shared_ptr<pcl::io::Image> &_image,
+         const boost::shared_ptr<pcl::io::DepthImage> &_depth_image,
          const io::CameraParameters &_parameters_rgb,
          const io::CameraParameters &_parameters_depth,
          const boost::posix_time::ptime &_time)
@@ -154,8 +154,8 @@ struct Frame
     , time (_time) 
   {}
 
-  const boost::shared_ptr<openni_wrapper::Image> image;
-  const boost::shared_ptr<openni_wrapper::DepthImage> depth_image;
+  const boost::shared_ptr<pcl::io::Image> image;
+  const boost::shared_ptr<pcl::io::DepthImage> depth_image;
         
   io::CameraParameters parameters_rgb, parameters_depth;
 
@@ -275,22 +275,22 @@ class Writer
       ss1 << "frame_" << time_string << "_rgb.pclzf";
       switch (frame->image->getEncoding ())
       {
-        case openni_wrapper::Image::YUV422:
+        case pcl::io::Image::YUV422:
         {
           io::LZFYUV422ImageWriter lrgb;
-          lrgb.write (reinterpret_cast<const char*> (&frame->image->getMetaData ().Data ()[0]), frame->image->getWidth (), frame->image->getHeight (), ss1.str ());
+          lrgb.write (reinterpret_cast<const char*> (frame->image->getData ()), frame->image->getWidth (), frame->image->getHeight (), ss1.str ());
           break;
         }
-        case openni_wrapper::Image::RGB:
+        case pcl::io::Image::RGB:
         {
           io::LZFRGB24ImageWriter lrgb;
-          lrgb.write (reinterpret_cast<const char*> (&frame->image->getMetaData ().Data ()[0]), frame->image->getWidth (), frame->image->getHeight (), ss1.str ());
+          lrgb.write (reinterpret_cast<const char*> (frame->image->getData ()), frame->image->getWidth (), frame->image->getHeight (), ss1.str ());
           break;
         }
-        case openni_wrapper::Image::BAYER_GRBG:
+        case pcl::io::Image::BAYER_GRBG:
         {
           io::LZFBayer8ImageWriter lrgb;
-          lrgb.write (reinterpret_cast<const char*> (&frame->image->getMetaData ().Data ()[0]), frame->image->getWidth (), frame->image->getHeight (), ss1.str ());
+          lrgb.write (reinterpret_cast<const char*> (frame->image->getData ()), frame->image->getWidth (), frame->image->getHeight (), ss1.str ());
           break;
         }
       }
@@ -299,7 +299,7 @@ class Writer
       ss2 << "frame_" + time_string + "_depth.pclzf";
       io::LZFDepth16ImageWriter ld;
       //io::LZFShift11ImageWriter ld;
-      ld.write (reinterpret_cast<const char*> (&frame->depth_image->getDepthMetaData ().Data ()[0]), frame->depth_image->getWidth (), frame->depth_image->getHeight (), ss2.str ());
+      ld.write (reinterpret_cast<const char*> (&frame->depth_image->getData ()[0]), frame->depth_image->getWidth (), frame->depth_image->getHeight (), ss2.str ());
       
       // Save depth data
       ss3 << "frame_" << time_string << ".xml";
@@ -371,8 +371,8 @@ class Driver
   private:
     //////////////////////////////////////////////////////////////////////////
     void
-    image_callback (const boost::shared_ptr<openni_wrapper::Image> &image, 
-                    const boost::shared_ptr<openni_wrapper::DepthImage> &depth_image, 
+    image_callback (const boost::shared_ptr<pcl::io::Image> &image, 
+                    const boost::shared_ptr<pcl::io::DepthImage> &depth_image, 
                     float)
     {
       boost::posix_time::ptime time = boost::posix_time::microsec_clock::local_time ();
@@ -411,7 +411,7 @@ class Driver
     void 
     grabAndSend ()
     {
-      boost::function<void (const boost::shared_ptr<openni_wrapper::Image>&, const boost::shared_ptr<openni_wrapper::DepthImage>&, float) > image_cb = boost::bind (&Driver::image_callback, this, _1, _2, _3);
+      boost::function<void (const boost::shared_ptr<pcl::io::Image>&, const boost::shared_ptr<pcl::io::DepthImage>&, float) > image_cb = boost::bind (&Driver::image_callback, this, _1, _2, _3);
       boost::signals2::connection image_connection = grabber_.registerCallback (image_cb);
 
       grabber_.start ();
@@ -496,7 +496,7 @@ class Viewer
           {
             // Copy RGB data for visualization
             static vector<unsigned char> rgb_data (frame->image->getWidth () * frame->image->getHeight () * 3);
-            if (frame->image->getEncoding () != openni_wrapper::Image::RGB)
+            if (frame->image->getEncoding () != pcl::io::Image::RGB)
             {
               frame->image->fillRGB (frame->image->getWidth (), 
                                      frame->image->getHeight (), 
@@ -504,7 +504,7 @@ class Viewer
             }
             else
               memcpy (&rgb_data[0], 
-                      frame->image->getMetaData ().Data (), 
+                      frame->image->getData (), 
                       rgb_data.size ());
 
             image_viewer_->addRGBImage (reinterpret_cast<unsigned char*> (&rgb_data[0]), 
@@ -515,7 +515,7 @@ class Viewer
           if (frame->depth_image)
           {
             unsigned char* data = visualization::FloatImageUtils::getVisualImage (
-                reinterpret_cast<const unsigned short*> (&frame->depth_image->getDepthMetaData ().Data ()[0]),
+                reinterpret_cast<const unsigned short*> (&frame->depth_image->getData ()[0]),
                   frame->depth_image->getWidth (), frame->depth_image->getHeight (),
                   numeric_limits<unsigned short>::min (), 
                   // Scale so that the colors look brigher on screen

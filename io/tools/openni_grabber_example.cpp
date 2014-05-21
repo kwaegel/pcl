@@ -73,7 +73,7 @@ class SimpleOpenNIProcessor
     }
 
     void 
-    imageDepthImageCallback (const boost::shared_ptr<openni_wrapper::Image>&, const boost::shared_ptr<openni_wrapper::DepthImage>& d_img, float constant)
+    imageDepthImageCallback (const boost::shared_ptr<pcl::io::Image>&, const boost::shared_ptr<pcl::io::DepthImage>& d_img, float constant)
     {
       static unsigned count = 0;
       static double last = pcl::getTime ();
@@ -106,7 +106,7 @@ class SimpleOpenNIProcessor
       boost::signals2::connection c = interface.registerCallback (f);
 
       // make callback function from member function
-      boost::function<void (const boost::shared_ptr<openni_wrapper::Image>&, const boost::shared_ptr<openni_wrapper::DepthImage>&, float constant)> f2 =
+      boost::function<void (const boost::shared_ptr<pcl::io::Image>&, const boost::shared_ptr<pcl::io::DepthImage>&, float constant)> f2 =
         boost::bind (&SimpleOpenNIProcessor::imageDepthImageCallback, this, _1, _2, _3);
 
       // connect callback function for desired signal. In this case its a point cloud with color values

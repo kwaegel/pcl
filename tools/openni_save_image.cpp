@@ -92,8 +92,8 @@ class SimpleOpenNIViewer
     }
 
     void
-    image_callback (const boost::shared_ptr<openni_wrapper::Image> &image, 
-                    const boost::shared_ptr<openni_wrapper::DepthImage> &depth_image, float)
+    image_callback (const boost::shared_ptr<pcl::io::Image> &image, 
+                    const boost::shared_ptr<pcl::io::DepthImage> &depth_image, float)
     {
       FPS_CALC ("image callback");
       boost::mutex::scoped_lock lock (image_mutex_);
@@ -104,7 +104,7 @@ class SimpleOpenNIViewer
     void
     run ()
     {
-      boost::function<void (const boost::shared_ptr<openni_wrapper::Image>&, const boost::shared_ptr<openni_wrapper::DepthImage>&, float) > image_cb = boost::bind (&SimpleOpenNIViewer::image_callback, this, _1, _2, _3);
+      boost::function<void (const boost::shared_ptr<pcl::io::Image>&, const boost::shared_ptr<pcl::io::DepthImage>&, float) > image_cb = boost::bind (&SimpleOpenNIViewer::image_callback, this, _1, _2, _3);
       boost::signals2::connection image_connection = grabber_.registerCallback (image_cb);
       
       grabber_.start ();
@@ -121,10 +121,10 @@ class SimpleOpenNIViewer
         if (image_)
         {
           FPS_CALC ("writer callback");
-          boost::shared_ptr<openni_wrapper::Image> image;
+          boost::shared_ptr<pcl::io::Image> image;
           image.swap (image_);
 
-          if (image->getEncoding() == openni_wrapper::Image::RGB)
+          if (image->getEncoding() == pcl::io::Image::RGB)
           {
             data = reinterpret_cast<const void*> (image->getMetaData ().Data ());
             importer_->SetWholeExtent (0, image->getWidth () - 1, 0, image->getHeight () - 1, 0, 0);
@@ -156,7 +156,7 @@ class SimpleOpenNIViewer
 
         if (depth_image_)
         {
-          boost::shared_ptr<openni_wrapper::DepthImage> depth_image;
+          boost::shared_ptr<pcl::io::DepthImage> depth_image;
           depth_image.swap (depth_image_);
 
           std::stringstream ss;
@@ -184,8 +184,8 @@ class SimpleOpenNIViewer
 
     pcl::OpenNIGrabber& grabber_;
     boost::mutex image_mutex_;
-    boost::shared_ptr<openni_wrapper::Image> image_;
-    boost::shared_ptr<openni_wrapper::DepthImage> depth_image_;
+    boost::shared_ptr<pcl::io::Image> image_;
+    boost::shared_ptr<pcl::io::DepthImage> depth_image_;
     vtkSmartPointer<vtkImageImport> importer_, depth_importer_;
     vtkSmartPointer<vtkTIFFWriter> writer_;
     vtkSmartPointer<vtkImageFlip> flipper_;
